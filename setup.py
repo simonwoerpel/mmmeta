@@ -8,7 +8,7 @@ def readme():
 
 setup(
     name="mmmeta",
-    version="0.1",
+    version="0.1.1",
     description="A simple toolkit for managing local state against remote metadata.",
     long_description=readme(),
     classifiers=[
