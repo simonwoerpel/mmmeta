@@ -23,6 +23,7 @@ class FilesystemBackend(Backend):
         path = self.get_path(path)
         ensure_directory(os.path.split(path)[0])
         with open(path, "w") as f:
+            content = str(content)
             f.write(content)
         return path
 

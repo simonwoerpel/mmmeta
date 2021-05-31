@@ -52,7 +52,7 @@ class Test(unittest.TestCase):
         self.assertRaises(StoreError, lambda: store.__setitem__("illegal/key"))
         # values are typed
         store["counter"] = "1"
-        store["value"] = "1.1"
+        store["value"] = 1.1
         self.assertIsInstance(store["counter"], int)
         self.assertIsInstance(store["value"], float)
         # touch shorthand
