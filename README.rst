@@ -1,3 +1,5 @@
+|test| |release| |pypi|
+
 mmmeta
 ======
 
@@ -343,3 +345,10 @@ Test:
 ::
 
    make test
+
+.. |test| image:: https://github.com/simonwoerpel/mmmeta/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/simonwoerpel/mmmeta/actions/workflows/test.yml
+.. |release| image:: https://github.com/simonwoerpel/mmmeta/actions/workflows/release.yml/badge.svg
+   :target: https://github.com/simonwoerpel/mmmeta/actions/workflows/release.yml
+.. |pypi| image:: https://github.com/simonwoerpel/mmmeta/actions/workflows/publish.yml/badge.svg
+   :target: https://github.com/simonwoerpel/mmmeta/actions/workflows/publish.yml

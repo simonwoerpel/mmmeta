@@ -1,3 +1,7 @@
+[![test](https://github.com/simonwoerpel/mmmeta/actions/workflows/test.yml/badge.svg)](https://github.com/simonwoerpel/mmmeta/actions/workflows/test.yml)
+[![release](https://github.com/simonwoerpel/mmmeta/actions/workflows/release.yml/badge.svg)](https://github.com/simonwoerpel/mmmeta/actions/workflows/release.yml)
+[![pypi](https://github.com/simonwoerpel/mmmeta/actions/workflows/publish.yml/badge.svg)](https://github.com/simonwoerpel/mmmeta/actions/workflows/publish.yml)
+
 # mmmeta
 
 Handle meta information and local state about files from remote (read-only)
