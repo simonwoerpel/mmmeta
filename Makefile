@@ -2,7 +2,7 @@ all: clean install test
 
 install:
 	pip install -e .
-	pip install twine coverage nose moto pytest pytest-cov black flake8 isort
+	pip install twine coverage nose moto pytest pytest-cov black flake8 isort bump2version
 
 test:
 	rm -rf ./testdata/_mmmeta
