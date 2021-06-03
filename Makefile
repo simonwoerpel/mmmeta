@@ -7,6 +7,7 @@ install:
 test:
 	rm -rf ./testdata/_mmmeta
 	pytest -s --cov=mmmeta --cov-report term-missing
+	rm -rf ./testdata/_mmmeta
 
 build: readme
 	python setup.py sdist bdist_wheel
