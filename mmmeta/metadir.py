@@ -6,11 +6,12 @@ from .backend.filesystem import FilesystemBackend
 from .backend.store import Store
 from .db import generate_meta_db, update_state_db
 from .file import FilesWrapper
+from . import settings
 
 
 class Metadir:
-    def __init__(self, base_path):
-        self._base_path = base_path
+    def __init__(self, base_path=None):
+        self._base_path = base_path or settings.MMMETA
         self._backend = FilesystemBackend(os.path.join(self._base_path, "_mmmeta"))
         self._meta_db_path = f'sqlite:///{self._backend.get_path("meta.db")}'
         self._state_db_path = f'sqlite:///{self._backend.get_path("state.db")}'

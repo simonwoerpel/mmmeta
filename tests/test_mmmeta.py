@@ -1,16 +1,17 @@
 import os
 import unittest
 from datetime import datetime
+from importlib import reload
 
 from dataset.database import Database
 from dataset.table import Table
 
-from mmmeta import mmmeta
+from mmmeta import mmmeta, settings
 from mmmeta.backend.filesystem import FilesystemBackend
 from mmmeta.backend.store import Store
 from mmmeta.exceptions import StoreError
-from mmmeta.metadir import Metadir
 from mmmeta.file import File
+from mmmeta.metadir import Metadir
 
 
 class Test(unittest.TestCase):
@@ -21,6 +22,15 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.meta = mmmeta("./testdata/")
+
+    def test_init_via_env(self):
+        m = mmmeta()
+        self.assertEqual(m._base_path, os.getcwd())
+        os.environ["MMMETA"] = "./testdata"
+        reload(settings)
+        m = mmmeta()
+        self.assertIn("testdata", m._base_path)
+        self.assertEqual(m._base_path, settings.MMMETA)
 
     def test_init(self):
         meta = self.meta
