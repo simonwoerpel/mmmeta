@@ -1,5 +1,10 @@
 # changelog
 
+## 0.3.0
+
+- Add config yaml for metadata configuration and validation
+- Various small fixes & improvements
+
 ## 0.2.2
 
 - Add release & pypi publish workflows
