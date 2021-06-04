@@ -1,8 +1,10 @@
+import copy
 import os
 import unittest
 from datetime import datetime
 from importlib import reload
 
+from sqlalchemy.exc import IntegrityError
 import yaml
 from dataset.database import Database
 from dataset.table import Table
@@ -39,8 +41,8 @@ def create_config(data=""):
 
 class Test(unittest.TestCase):
     def setUp(self):
-        self.meta = mmmeta("./testdata/")
         # FIXME test db transactions?
+        self.meta = mmmeta("./testdata/")
         self.meta.generate(replace=True)
         self.meta.update(replace=True)
 
@@ -97,6 +99,20 @@ class Test(unittest.TestCase):
         self.assertIsInstance(meta.files._table, Table)
         self.assertEqual(meta._state_db.url, meta._db.url)
         self.assertTrue(os.path.exists("./testdata/_mmmeta/state.db"))
+        # ensure primary key
+        self.assertIn(meta.config.unique, meta.files.table.primary_key.columns.keys())
+        self.assertIn("content_hash", meta.files.table.primary_key.columns.keys())
+
+        # hacky change of primary key
+        config = copy.deepcopy(CONFIG)
+        config["metadata"]["unique"] = "_file_name"
+        create_config(config)
+        m = mmmeta("./testdata")
+        m.generate()
+        m.update()
+        self.assertIn("_file_name", meta.files.table.primary_key.columns.keys())
+        # reset config
+        create_config(CONFIG)
 
     def test_generate(self):
         meta = self.meta
@@ -159,7 +175,8 @@ class Test(unittest.TestCase):
     def test_validation(self):
         # metadata validation
         filedata = {"foo": "bar"}
-        self.assertRaises(ValidationError, lambda: self.meta.files.validate(filedata))
+        with self.assertRaises(ValidationError):
+            self.meta.files.validate(filedata)
         for file in self.meta.files:
             self.assertTrue(self.meta.files.validate(file))
 
@@ -187,7 +204,11 @@ class Test(unittest.TestCase):
             self.assertSetEqual(file_keys, m.config.keys)
 
         # add an invalid file
-        m._meta_db["files"].insert({"foo": "bar"})
+        # missing primary key
+        with self.assertRaises(IntegrityError):
+            m._meta_db["files"].insert({"foo": "bar"})
+        # primary key but missing required keys
+        m._meta_db["files"].insert({"content_hash": "123", "foo": "bar"})
         with self.assertLogs(level="ERROR") as cm:
             invalid = m.update()[2]
         self.assertIn("Missing keys", cm.output[0])
