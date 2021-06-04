@@ -1,6 +1,7 @@
 import os
 
 import dataset
+from sqlalchemy.sql import func
 
 from . import settings
 from .backend.filesystem import FilesystemBackend
@@ -71,13 +72,23 @@ class Metadir:
         return self.store.touch(key)
 
     @property
-    def state_last_touched(self):
-        return self.store["state_last_updated"]
+    def state_last_updated(self):
+        table = self.files._table.table
+        query = func.max(table.c["__state_last_updated"])
+        for res in self._state_db.query(query):
+            return res.get("max_1")
 
     @property
-    def meta_last_touched(self):
-        return self.store["meta_last_updated"]
+    def meta_last_updated(self):
+        table = self.files._table.table
+        query = func.max(table.c["__meta_last_updated"])
+        for res in self._state_db.query(query):
+            return res.get("max_1")
 
     @property
     def last_touched(self):
-        return self.store["store_last_updated"]
+        return max(
+            self.store["store_last_updated"],
+            self.state_last_updated,
+            self.meta_last_updated,
+        )

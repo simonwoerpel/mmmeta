@@ -106,7 +106,7 @@ class Test(unittest.TestCase):
         meta.update()
 
         # meta generation before state generation
-        self.assertGreater(meta.state_last_touched, meta.meta_last_touched)
+        self.assertGreater(meta.state_last_updated, meta.meta_last_updated)
 
         testfiles = list(
             meta._backend.get_children("..", lambda x: x.endswith(".json"))
@@ -136,8 +136,8 @@ class Test(unittest.TestCase):
         # file was added to state db after being added to meta db
         self.assertGreater(file["__state_added"], file["__meta_added"])
         # a file update always updates the metadir state
-        self.assertGreaterEqual(meta.state_last_touched, file["__state_last_updated"])
-        self.assertGreaterEqual(meta.last_touched, meta.state_last_touched)
+        self.assertGreaterEqual(meta.state_last_updated, file["__state_last_updated"])
+        self.assertGreaterEqual(meta.last_touched, meta.state_last_updated)
         self.assertIn(file, meta.files)
         # add a new file
         meta.files.insert({"content_hash": "foo"})

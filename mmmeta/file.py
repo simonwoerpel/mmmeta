@@ -32,7 +32,6 @@ class File:
     def save(self):
         with self._metadir._state_db as db:
             db["files"].update(self._data, [self._unique])
-        self._metadir.touch("state_last_updated")
 
     @property
     def uid(self):
