@@ -8,3 +8,7 @@ class FetchError(Exception):
 
 class StoreError(Exception):
     pass
+
+
+class ValidationError(Exception):
+    pass

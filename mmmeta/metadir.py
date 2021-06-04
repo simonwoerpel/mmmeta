@@ -2,11 +2,12 @@ import os
 
 import dataset
 
+from . import settings
 from .backend.filesystem import FilesystemBackend
 from .backend.store import Store
+from .config import Config
 from .db import generate_meta_db, update_state_db
 from .file import FilesWrapper
-from . import settings
 
 
 class Metadir:
@@ -15,6 +16,7 @@ class Metadir:
         self._backend = FilesystemBackend(os.path.join(self._base_path, "_mmmeta"))
         self._meta_db_path = f'sqlite:///{self._backend.get_path("meta.db")}'
         self._state_db_path = f'sqlite:///{self._backend.get_path("state.db")}'
+        self.config = Config(self)
         self.store = Store(FilesystemBackend(self._backend.get_path("_store")))
 
     def __repr__(self):
@@ -39,19 +41,19 @@ class Metadir:
     def _db(self):
         return self._state_db
 
-    def generate(self, path=None, replace=False, unique="content_hash"):
+    def generate(self, path=None, replace=False):
         """
         generate or update meta db
         """
         path = path or self._base_path
         backend = FilesystemBackend(path)
-        generate_meta_db(backend, self, replace)
+        return generate_meta_db(backend, self, replace)
 
-    def update(self, unique="content_hash"):
+    def update(self, replace=False):
         """
         update local state with meta db
         """
-        update_state_db(self)
+        return update_state_db(self, replace)
 
     def inspect(self):
         """
