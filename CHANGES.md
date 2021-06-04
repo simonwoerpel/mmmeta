@@ -1,5 +1,9 @@
 # changelog
 
+## 3.1.2
+
+- Implement soft deletion
+
 ## 0.3.0
 
 - Add config yaml for metadata configuration and validation

@@ -229,3 +229,33 @@ class Test(unittest.TestCase):
             self.assertIn(file.name, file.public.url)
             self.assertTrue(file.public.url.endswith(file.name))
             self.assertTrue(file.public.uri.startswith("s3://my_bucket"))
+
+    def test_delete_file(self):
+        # move file away
+        file = "./testdata/0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.json"
+        os.rename(file, "/tmp/test.json")
+        with self.assertLogs(level="WARNING") as cm:
+            res = self.meta.generate(ensure=True)
+        self.assertEqual(res[3], 1)
+        self.assertIn("soft deleted files in meta.db", cm.output[0])
+
+        # this doesn't return delete count as the deleted file
+        # still exists (marked as deleted) in the meta db:
+        # but we are logging it
+        with self.assertLogs(level="WARNING") as cm:
+            res = self.meta.update()
+        self.assertEqual(res[3], 0)
+        self.assertIn("soft deleted files in meta.db", cm.output[0])
+
+        # actual delete file from meta db
+        self.meta._meta_db["files"].delete(
+            content_hash="0011d580dcdff07f0c3a95ddc80b8fd545faa7d6"
+        )
+        self.assertEqual(self.meta.generate(replace=True)[1], 9)
+        with self.assertLogs(level="WARNING") as cm:
+            res = self.meta.update()
+        self.assertEqual(res[3], 1)
+        self.assertIn("hard deleted files in meta.db", cm.output[1])
+
+        # move back for further tests
+        os.rename("/tmp/test.json", file)
