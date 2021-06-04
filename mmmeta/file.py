@@ -1,12 +1,16 @@
 from datetime import datetime
+from types import SimpleNamespace
+
+from banal import clean_dict
+
+from .exceptions import ValidationError
 
 
 class File:
-    def __init__(self, metadir, data, identifier="content_hash"):
+    def __init__(self, metadir, data):
         self._metadir = metadir
         self._data = data
-        self._identifier = identifier
-        self.id = self._data[identifier]
+        self._unique = metadir.config.unique
 
     def __setitem__(self, attr, value):
         self.update(**{attr: value})
@@ -27,8 +31,20 @@ class File:
 
     def save(self):
         with self._metadir._state_db as db:
-            db["files"].update(self._data, [self._identifier])
+            db["files"].update(self._data, [self._unique])
         self._metadir.touch("state_last_updated")
+
+    @property
+    def uid(self):
+        return self._data[self._unique]
+
+    @property
+    def name(self):
+        return self._data.get(self._metadir.config.file_name, self.uid)
+
+    @property
+    def public(self):
+        return SimpleNamespace(**dict(self._metadir.config.get_public(self._data)))
 
 
 class FilesWrapper:
@@ -42,6 +58,7 @@ class FilesWrapper:
     def __init__(self, table, metadir):
         self._table = table
         self._metadir = metadir
+        self.config = metadir.config
 
     def __iter__(self):
         for data in self._table:
@@ -67,3 +84,15 @@ class FilesWrapper:
         pass through dataset table funcionality
         """
         return getattr(self._table, attr)
+
+    def validate(self, data):
+        """
+        check if data dict has all required keys from config
+        """
+        if hasattr(data, "_data"):
+            data = data._data
+        data = clean_dict(data)
+        remaining = self.config.required_keys - set(data.keys())
+        if remaining:
+            raise ValidationError(f"Missing keys: {remaining}")
+        return True

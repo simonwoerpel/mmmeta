@@ -30,3 +30,16 @@ def cast(value):
             return datetime.fromisoformat(value)
         except ValueError:
             return value
+
+
+def flatten_dict(d):
+    def items():
+        for key, value in d.items():
+            key = key.replace("-", "_")
+            if isinstance(value, dict):
+                for subkey, subvalue in flatten_dict(value).items():
+                    yield key + ":" + subkey, subvalue
+            else:
+                yield key, value
+
+    return dict(items())

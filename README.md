@@ -128,7 +128,7 @@ from mmmeta import mmmeta
 m = mmmeta("./path/to/metadir")
 
 for file in m.files(document_type="contract"):
-    download(file["public_url"])
+    download(file.public.url)
 
 def download(url):
     # implement download based on remote storage
@@ -138,6 +138,8 @@ def download(url):
     # - https://remote.com/path/to/file.pdf
     # ...
 ```
+
+See [config](#public) on how to generate public urls or uris
 
 The
 
@@ -217,6 +219,41 @@ local filesystem location or cloud storage) and doesn't handle any of the local
 Therefore the synchronization of the *metadir* `./foo/_mmmeta` is up to you
 with the tool of your choice.
 
+
+## Config
+
+`mmmeta` can optionally have a config stored in `./foo/_mmmeta/config.yml`
+
+Example (all settings are optional):
+
+```yaml
+metadata:
+  file_name: _file_name  # key in json metadat for file name
+  include:  # only include these keys from json metadata in meta db
+  - reference
+  - modified_at
+  - title
+  - originators
+  - publisher:name  # nested keys are flattened with ":" between them
+  unique: content_hash  # unqiue identifier for files
+public:  # simple string replacement to generate `File.public.<attr>` attributes, like:
+  url: https://my_bucket.s3.eu-central-1.amazonaws.com/foo/bar/{_file_name}
+  uri: s3://my_bucket/foo/bar/{_file_name}
+```
+
+### public
+
+The configuration section `public` from above ensures that the file objects
+have attributes to access the actual files from the remote:
+
+```python
+from mmmeta import mmmeta
+
+m = mmmeta()
+
+for file in m.files:
+    print(file.public.uri)
+```
 
 ## Store
 
