@@ -32,7 +32,6 @@ class File:
     def save(self):
         with self._metadir._state_db as db:
             db["files"].update(self._data, [self._unique])
-        self._metadir.touch("state_last_updated")
 
     @property
     def uid(self):
@@ -68,7 +67,7 @@ class FilesWrapper:
         return len(self._table)
 
     def __contains__(self, file):
-        return bool(self.find_one(id=file["id"]))
+        return bool(self.find_one(**{self.config.unique: file[self.config.unique]}))
 
     def find(self, *args, **kwargs):
         for data in self._table.find(*args, **kwargs):

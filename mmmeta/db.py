@@ -12,14 +12,30 @@ log = logging.getLogger(__name__)
 
 
 def _upsert(db, files, prefix, unique, replace, validate):
+    def _get_table(tx, name="files"):
+        return tx.get_table(name, primary_id=unique, primary_type=tx.types.text)
+
     with db as tx:
         if replace:
             # FIXME implement a soft delete? aka backup db file first
             tx["files"].drop()
 
+        table = _get_table(tx)
+        primary_keys = table.table.primary_key.columns.keys()
+        if unique not in primary_keys:
+            # table was created before with another primary key
+            # this is a bit hacky, but because of SQLite limitations,
+            # we just make a new copy of the table with the new primary key...
+            tmp_table = _get_table(tx, "tmp")
+            tmp_table.insert_many([i for i in table])
+            table.drop()
+            table = _get_table(tx)
+            table.insert_many([i for i in tmp_table])
+            tmp_table.drop()
+
         # use explicit operations instead of upsert_many to be able to set some
         # more metadata
-        existing = [f[unique] for f in db["files"]]
+        existing = [f[unique] for f in table]
         log.info(f"{len(existing)} exsiting files in `{db}`")
         updated = 0
         added = 0
@@ -31,10 +47,10 @@ def _upsert(db, files, prefix, unique, replace, validate):
                 file[f"{prefix}_last_updated"] = datetime.now()
                 if file[unique] in existing:
                     updated += 1
-                    tx["files"].update(file, [unique])
+                    table.update(file, [unique])
                 else:
                     file[f"{prefix}_added"] = datetime.now()
-                    tx["files"].insert(file)
+                    table.insert(file)
                     added += 1
             except ValidationError as e:
                 invalid += 1
