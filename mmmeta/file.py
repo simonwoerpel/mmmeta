@@ -67,7 +67,7 @@ class FilesWrapper:
         return len(self._table)
 
     def __contains__(self, file):
-        return bool(self.find_one(id=file["id"]))
+        return bool(self.find_one(**{self.config.unique: file[self.config.unique]}))
 
     def find(self, *args, **kwargs):
         for data in self._table.find(*args, **kwargs):
