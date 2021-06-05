@@ -214,10 +214,10 @@ class Test(unittest.TestCase):
         self.assertIn("Missing keys", cm.output[0])
         self.assertEqual(invalid, 1)
 
-    def test_public(self):
+    def test_remote(self):
         config = {
             "metadata": {"file_name": "_file_name"},
-            "public": {
+            "remote": {
                 "url": "https://my_bucket.s3.eu-central-1.amazonaws.com/foo/bar/{_file_name}",  # noqa
                 "uri": "s3://my_bucket/foo/bar/{_file_name}",
             },
@@ -225,10 +225,10 @@ class Test(unittest.TestCase):
         create_config(config)
         m = mmmeta("./testdata")
         for file in m.files:
-            self.assertIn("amazonaws", file.public.url)
-            self.assertIn(file.name, file.public.url)
-            self.assertTrue(file.public.url.endswith(file.name))
-            self.assertTrue(file.public.uri.startswith("s3://my_bucket"))
+            self.assertIn("amazonaws", file.remote.url)
+            self.assertIn(file.name, file.remote.url)
+            self.assertTrue(file.remote.url.endswith(file.name))
+            self.assertTrue(file.remote.uri.startswith("s3://my_bucket"))
 
     def test_delete_file(self):
         # move file away

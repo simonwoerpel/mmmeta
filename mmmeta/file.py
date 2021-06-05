@@ -42,8 +42,8 @@ class File:
         return self._data.get(self._metadir.config.file_name, self.uid)
 
     @property
-    def public(self):
-        return SimpleNamespace(**dict(self._metadir.config.get_public(self._data)))
+    def remote(self):
+        return SimpleNamespace(**dict(self._metadir.config.get_remote(self._data)))
 
 
 class FilesWrapper:

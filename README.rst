@@ -148,7 +148,7 @@ Then,
    m = mmmeta("./path/to/metadir")
 
    for file in m.files(document_type="contract"):
-       download(file.public.url)
+       download(file.remote.url)
 
    def download(url):
        # implement download based on remote storage
@@ -158,7 +158,7 @@ Then,
        # - https://remote.com/path/to/file.pdf
        # ...
 
-See `config <#public>`__ on how to generate public urls or uris
+See `config <#remote>`__ on how to generate remote urls or uris
 
 The
 
@@ -265,14 +265,14 @@ Example (all settings are optional):
      - originators
      - publisher:name  # nested keys are flattened with ":" between them
      unique: content_hash  # unqiue identifier for files
-   public:  # simple string replacement to generate `File.public.<attr>` attributes, like:
+   remote:  # simple string replacement to generate `File.remote.<attr>` attributes, like:
      url: https://my_bucket.s3.eu-central-1.amazonaws.com/foo/bar/{_file_name}
      uri: s3://my_bucket/foo/bar/{_file_name}
 
-public
+remote
 ~~~~~~
 
-The configuration section ``public`` from above ensures that the file
+The configuration section ``remote`` from above ensures that the file
 objects have attributes to access the actual files from the remote:
 
 .. code:: python
@@ -282,7 +282,7 @@ objects have attributes to access the actual files from the remote:
    m = mmmeta()
 
    for file in m.files:
-       print(file.public.uri)
+       print(file.remote.uri)
 
 Store
 -----

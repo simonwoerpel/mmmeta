@@ -128,7 +128,7 @@ from mmmeta import mmmeta
 m = mmmeta("./path/to/metadir")
 
 for file in m.files(document_type="contract"):
-    download(file.public.url)
+    download(file.remote.url)
 
 def download(url):
     # implement download based on remote storage
@@ -139,7 +139,7 @@ def download(url):
     # ...
 ```
 
-See [config](#public) on how to generate public urls or uris
+See [config](#remote) on how to generate remote urls or uris
 
 The
 
@@ -236,14 +236,14 @@ metadata:
   - originators
   - publisher:name  # nested keys are flattened with ":" between them
   unique: content_hash  # unqiue identifier for files
-public:  # simple string replacement to generate `File.public.<attr>` attributes, like:
+remote:  # simple string replacement to generate `File.remote.<attr>` attributes, like:
   url: https://my_bucket.s3.eu-central-1.amazonaws.com/foo/bar/{_file_name}
   uri: s3://my_bucket/foo/bar/{_file_name}
 ```
 
-### public
+### remote
 
-The configuration section `public` from above ensures that the file objects
+The configuration section `remote` from above ensures that the file objects
 have attributes to access the actual files from the remote:
 
 ```python
@@ -252,7 +252,7 @@ from mmmeta import mmmeta
 m = mmmeta()
 
 for file in m.files:
-    print(file.public.uri)
+    print(file.remote.uri)
 ```
 
 ## Store

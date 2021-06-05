@@ -16,7 +16,7 @@ class Config:
       - originators
       - publisher:name
       unique: content_hash
-    public:
+    remote:
       url: https://my_bucket.s3.eu-central-1.amazonaws.com/foo/bar/{_file_name}
       uri: s3://my_bucket/foo/bar/{_file_name}
     """
@@ -30,7 +30,7 @@ class Config:
                 config = yaml.load(f)
             self._config = ensure_dict(config)
         self._metadata = ensure_dict(self["metadata"])
-        self._public = ensure_dict(self["public"])
+        self._remote = ensure_dict(self["remote"])
 
     def __getitem__(self, item):
         return self._config.get(item)
@@ -67,10 +67,10 @@ class Config:
 
         return set(_get_keys())
 
-    def get_public(self, data):
+    def get_remote(self, data):
         """
-        compute a public url or uris with simple string replacement from
-        `public` config
+        compute a remote url or uris with simple string replacement from
+        `remote` config
         """
-        for key, value in self._public.items():
+        for key, value in self._remote.items():
             yield key, value.format(**data)
