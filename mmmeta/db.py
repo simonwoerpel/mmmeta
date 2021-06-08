@@ -1,13 +1,13 @@
 import json
 import logging
-from itertools import chain
 from datetime import datetime
+from itertools import chain
+from pathlib import Path
 
 from banal import is_listish
 
 from .exceptions import ValidationError
-from .util import flatten_dict
-
+from .util import checksum, flatten_dict
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def _upsert(db, files, prefix, unique, replace, validate, ensure=False):
     return updated, added, invalid, deleted
 
 
-def load_data(fp, keys):
+def _load_metadata(fp, keys):
     # FIXME listish type in sqlite
     with open(fp) as f:
         data = flatten_dict(json.load(f))
@@ -90,6 +90,20 @@ def load_data(fp, keys):
         for k, v in data.items()
         if not keys or k in keys
     }
+
+
+def _load_files(files):
+    for _, fp in files:
+        p = Path(fp)
+        data = p.stat()
+        yield {
+            "file_name": p.name,
+            "file_path": fp,
+            "file_size": data.st_size,
+            "created_at": datetime.fromtimestamp(data.st_ctime),
+            "modified_at": datetime.fromtimestamp(data.st_mtime),
+            "content_hash": checksum(fp),
+        }
 
 
 def update_state_db(metadir, replace=False):
@@ -127,7 +141,7 @@ def update_state_db(metadir, replace=False):
     return updated, added, invalid, deleted
 
 
-def generate_meta_db(filebackend, metadir, replace=False, ensure=False):
+def generate_meta_db(filebackend, metadir, replace=False, ensure=False, no_meta=False):
     """
     generate or update file metadata
 
@@ -138,10 +152,19 @@ def generate_meta_db(filebackend, metadir, replace=False, ensure=False):
 
     if ensure:
         ensure = datetime.now()
-    files = (
-        load_data(fp, metadir.config.keys)
-        for _, fp in filebackend.get_children(condition=lambda x: x.endswith(".json"))
-    )
+
+    # either read in json metadata files or actual files (only local filesystem here)
+    if no_meta:
+        files = _load_files(
+            filebackend.get_children(condition=lambda x: "_mmmeta" not in x)
+        )
+    else:
+        files = (
+            _load_metadata(fp, metadir.config.keys)
+            for _, fp in filebackend.get_children(
+                condition=lambda x: x.endswith(".json")
+            )
+        )
 
     updated, added, invalid, deleted = _upsert(
         metadir._meta_db,

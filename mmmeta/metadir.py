@@ -42,13 +42,13 @@ class Metadir:
     def _db(self):
         return self._state_db
 
-    def generate(self, path=None, replace=False, ensure=False):
+    def generate(self, path=None, replace=False, ensure=False, no_meta=False):
         """
         generate or update meta db
         """
         path = path or self._base_path
         backend = FilesystemBackend(path)
-        return generate_meta_db(backend, self, replace, ensure)
+        return generate_meta_db(backend, self, replace, ensure, no_meta)
 
     def update(self, replace=False):
         """

@@ -45,10 +45,17 @@ def cli(ctx, metadir, files_root, invoke_without_command=True):
     help="Ensure metadata files are present, soft-delete non-existing",
     show_default=True,
 )
+@click.option(
+    "--no-meta",
+    is_flag=True,
+    default=False,
+    help="Read in actual files instead of json metadata files",
+    show_default=True,
+)
 @click.pass_context
-def generate(ctx, replace, ensure):
+def generate(ctx, replace, ensure, no_meta):
     path = None  # FIXME
-    ctx.obj["m"].generate(path, replace, ensure)
+    ctx.obj["m"].generate(path, replace, ensure, no_meta)
 
 
 @cli.command()

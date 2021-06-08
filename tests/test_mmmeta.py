@@ -224,6 +224,8 @@ class Test(unittest.TestCase):
         }
         create_config(config)
         m = mmmeta("./testdata")
+        m.generate(replace=True)
+        m.update()
         for file in m.files:
             self.assertIn("amazonaws", file.remote.url)
             self.assertIn(file.name, file.remote.url)
@@ -259,3 +261,35 @@ class Test(unittest.TestCase):
 
         # move back for further tests
         os.rename("/tmp/test.json", file)
+
+    def test_generate_no_meta(self):
+        # generate metadir from actual files, no json metadata
+        create_config(
+            {
+                "metadata": {
+                    "unique": "content_hash",
+                    "file_name": "file_name",
+                },
+            }
+        )
+        m = mmmeta("./testdata")
+        m.generate(replace=True, no_meta=True)
+        m.update()
+        # now we just read in all the files (json and pdf) = 20
+        self.assertEqual(m.files.count(), 20)
+        for file in m.files:
+            for key in (
+                "file_name",
+                "file_path",
+                "file_size",
+                "created_at",
+                "modified_at",
+                "content_hash",
+            ):
+                self.assertIn(
+                    key,
+                    file._data.keys(),
+                )
+
+        # reset config
+        create_config()
