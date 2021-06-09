@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -95,3 +96,15 @@ class FilesWrapper:
         if remaining:
             raise ValidationError(f"Missing keys: {remaining}")
         return True
+
+    def ensure(self, data):
+        """
+        ensure that an actual file (local storage only) really exists
+        """
+        if hasattr(data, "_data"):
+            data = data._data
+        data = clean_dict(data)
+        fp = os.path.join(
+            self._metadir._files_root, data[self._metadir.config.file_name]
+        )
+        return os.path.exists(fp)

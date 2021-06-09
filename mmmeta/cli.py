@@ -46,6 +46,13 @@ def cli(ctx, metadir, files_root, invoke_without_command=True):
     show_default=True,
 )
 @click.option(
+    "--ensure-files",
+    is_flag=True,
+    default=False,
+    help="Ensure actual files are present (for local store only), soft-delete non-existing",  # noqa
+    show_default=True,
+)
+@click.option(
     "--no-meta",
     is_flag=True,
     default=False,
@@ -53,9 +60,9 @@ def cli(ctx, metadir, files_root, invoke_without_command=True):
     show_default=True,
 )
 @click.pass_context
-def generate(ctx, replace, ensure, no_meta):
+def generate(ctx, replace, ensure, ensure_files, no_meta):
     path = None  # FIXME
-    ctx.obj["m"].generate(path, replace, ensure, no_meta)
+    ctx.obj["m"].generate(path, replace, ensure, ensure_files, no_meta)
 
 
 @cli.command()
