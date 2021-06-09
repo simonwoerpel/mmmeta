@@ -12,8 +12,9 @@ from .file import FilesWrapper
 
 
 class Metadir:
-    def __init__(self, base_path=None):
+    def __init__(self, base_path=None, files_root=None):
         self._base_path = base_path or settings.MMMETA
+        self._files_root = files_root or base_path or settings.MMMETA_FILES_ROOT
         self._backend = FilesystemBackend(os.path.join(self._base_path, "_mmmeta"))
         self._meta_db_path = f'sqlite:///{self._backend.get_path("meta.db")}'
         self._state_db_path = f'sqlite:///{self._backend.get_path("state.db")}'
@@ -42,13 +43,14 @@ class Metadir:
     def _db(self):
         return self._state_db
 
-    def generate(self, path=None, replace=False, ensure=False):
+    def generate(
+        self, path=None, replace=False, ensure=False, ensure_files=False, no_meta=False
+    ):
         """
         generate or update meta db
         """
-        path = path or self._base_path
-        backend = FilesystemBackend(path)
-        return generate_meta_db(backend, self, replace, ensure)
+        backend = FilesystemBackend(path or self._files_root)
+        return generate_meta_db(backend, self, replace, ensure, ensure_files, no_meta)
 
     def update(self, replace=False):
         """

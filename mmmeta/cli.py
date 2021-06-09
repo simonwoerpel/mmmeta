@@ -31,9 +31,38 @@ def cli(ctx, metadir, files_root, invoke_without_command=True):
 
 
 @cli.command()
+@click.option(
+    "--replace",
+    is_flag=True,
+    default=False,
+    help="Completly replace the meta database",
+    show_default=True,
+)
+@click.option(
+    "--ensure",
+    is_flag=True,
+    default=False,
+    help="Ensure metadata files are present, soft-delete non-existing",
+    show_default=True,
+)
+@click.option(
+    "--ensure-files",
+    is_flag=True,
+    default=False,
+    help="Ensure actual files are present (for local store only), soft-delete non-existing",  # noqa
+    show_default=True,
+)
+@click.option(
+    "--no-meta",
+    is_flag=True,
+    default=False,
+    help="Read in actual files instead of json metadata files",
+    show_default=True,
+)
 @click.pass_context
-def generate(ctx):
-    ctx.obj["m"].generate()
+def generate(ctx, replace, ensure, ensure_files, no_meta):
+    path = None  # FIXME
+    ctx.obj["m"].generate(path, replace, ensure, ensure_files, no_meta)
 
 
 @cli.command()

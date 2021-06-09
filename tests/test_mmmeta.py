@@ -54,6 +54,15 @@ class Test(unittest.TestCase):
         m = mmmeta()
         self.assertIn("testdata", m._base_path)
         self.assertEqual(m._base_path, settings.MMMETA)
+        self.assertIn("testdata", m._files_root)
+        self.assertEqual(m._files_root, settings.MMMETA_FILES_ROOT)
+        os.environ["MMMETA_FILES_ROOT"] = "./testdata/foo"
+        reload(settings)
+        m = mmmeta()
+        self.assertIn("testdata", m._base_path)
+        self.assertEqual(m._base_path, settings.MMMETA)
+        self.assertIn("foo", m._files_root)
+        self.assertEqual(m._files_root, settings.MMMETA_FILES_ROOT)
 
     def test_init(self):
         meta = self.meta
@@ -70,6 +79,10 @@ class Test(unittest.TestCase):
         self.assertIn("testdata/_mmmeta", backend.get_base_path())
         self.assertTrue(os.path.exists("./testdata/_mmmeta"))
         self.assertTrue(os.path.exists("./testdata/_mmmeta/_store"))
+        # other initialization method: mmmeta_root, files_root
+        m = mmmeta("foo", "bar")
+        self.assertIn("foo", m._base_path)
+        self.assertIn("bar", m._files_root)
 
     def test_store(self):
         store = self.meta.store
@@ -214,24 +227,26 @@ class Test(unittest.TestCase):
         self.assertIn("Missing keys", cm.output[0])
         self.assertEqual(invalid, 1)
 
-    def test_public(self):
+    def test_remote(self):
         config = {
             "metadata": {"file_name": "_file_name"},
-            "public": {
+            "remote": {
                 "url": "https://my_bucket.s3.eu-central-1.amazonaws.com/foo/bar/{_file_name}",  # noqa
                 "uri": "s3://my_bucket/foo/bar/{_file_name}",
             },
         }
         create_config(config)
         m = mmmeta("./testdata")
+        m.generate(replace=True)
+        m.update()
         for file in m.files:
-            self.assertIn("amazonaws", file.public.url)
-            self.assertIn(file.name, file.public.url)
-            self.assertTrue(file.public.url.endswith(file.name))
-            self.assertTrue(file.public.uri.startswith("s3://my_bucket"))
+            self.assertIn("amazonaws", file.remote.url)
+            self.assertIn(file.name, file.remote.url)
+            self.assertTrue(file.remote.url.endswith(file.name))
+            self.assertTrue(file.remote.uri.startswith("s3://my_bucket"))
 
     def test_delete_file(self):
-        # move file away
+        # move metadata file away
         file = "./testdata/0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.json"
         os.rename(file, "/tmp/test.json")
         with self.assertLogs(level="WARNING") as cm:
@@ -239,12 +254,10 @@ class Test(unittest.TestCase):
         self.assertEqual(res[3], 1)
         self.assertIn("soft deleted files in meta.db", cm.output[0])
 
-        # this doesn't return delete count as the deleted file
-        # still exists (marked as deleted) in the meta db:
-        # but we are logging it
+        # soft delete
         with self.assertLogs(level="WARNING") as cm:
             res = self.meta.update()
-        self.assertEqual(res[3], 0)
+        self.assertEqual(res[3], 1)
         self.assertIn("soft deleted files in meta.db", cm.output[0])
 
         # actual delete file from meta db
@@ -259,3 +272,57 @@ class Test(unittest.TestCase):
 
         # move back for further tests
         os.rename("/tmp/test.json", file)
+
+    def test_generate_no_meta(self):
+        # generate metadir from actual files, no json metadata
+        create_config(
+            {
+                "metadata": {
+                    "unique": "content_hash",
+                    "file_name": "file_name",
+                },
+            }
+        )
+        m = mmmeta("./testdata")
+        m.generate(replace=True, no_meta=True)
+        m.update()
+        # now we just read in all the files (json and pdf) = 20
+        self.assertEqual(m.files.count(), 20)
+        for file in m.files:
+            for key in (
+                "file_name",
+                "file_path",
+                "file_size",
+                "created_at",
+                "modified_at",
+                "content_hash",
+            ):
+                self.assertIn(
+                    key,
+                    file._data.keys(),
+                )
+
+        # reset config
+        create_config()
+
+    def test_other_files_root(self):
+        # assert that no files are found in different root location
+        m = mmmeta("./testdata", "./testdata/other_files")
+        m.generate(replace=True)
+        self.assertEqual(m._meta_db["files"].count(), 0)
+
+    def test_ensure_actual_files(self):
+        # move actual file away
+        file = "./testdata/0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.data.pdf"
+        os.rename(file, "/tmp/test.pdf")
+        with self.assertLogs(level="WARNING") as cm:
+            res = self.meta.update()
+            self.meta.generate(ensure_files=True)
+        # the file is now soft deleted
+        with self.assertLogs(level="WARNING") as cm:
+            res = self.meta.update()
+        self.assertEqual(res[3], 1)
+        self.assertIn("soft deleted files in meta.db", cm.output[0])
+
+        # move back for further tests
+        os.rename("/tmp/test.pdf", file)

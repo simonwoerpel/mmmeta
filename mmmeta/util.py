@@ -1,6 +1,10 @@
 import os
-
 from datetime import datetime
+from hashlib import sha1
+from pathlib import Path
+
+BUF_SIZE = 1024 * 1024 * 16
+HASH_LENGTH = 40  # sha1
 
 
 def get_files(directory, condition=lambda x: True):
@@ -43,3 +47,23 @@ def flatten_dict(d):
                 yield key, value
 
     return dict(items())
+
+
+def ensure_path(file_path):
+    if file_path is None or isinstance(file_path, Path):
+        return file_path
+    return Path(file_path).resolve()
+
+
+def checksum(file_name):
+    """Generate a hash for a given file name."""
+    file_name = ensure_path(file_name)
+    if file_name is not None and file_name.is_file():
+        digest = sha1()
+        with open(file_name, "rb") as fh:
+            while True:
+                block = fh.read(BUF_SIZE)
+                if not block:
+                    break
+                digest.update(block)
+        return str(digest.hexdigest())
