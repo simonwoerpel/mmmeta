@@ -54,11 +54,11 @@ class Metadir:
             backend, self, replace, ensure_metadata, ensure_files, no_meta
         )
 
-    def update(self, replace=False):
+    def update(self, replace=False, cleanup=False):
         """
         update local state with meta db
         """
-        return update_state_db(self, replace)
+        return update_state_db(self, replace, cleanup)
 
     def inspect(self):
         """

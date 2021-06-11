@@ -104,7 +104,7 @@ def _load_files(files):
         }
 
 
-def update_state_db(metadir, replace=False):
+def update_state_db(metadir, replace=False, cleanup=False):
     """
     update remote metadata to local state
     """
@@ -138,6 +138,26 @@ def update_state_db(metadir, replace=False):
             table = _get_table(tx)
             table.insert_many([i for i in tmp_table])
             tmp_table.drop()
+
+        if cleanup:
+            log.info("Cleaning up ...")
+            tmp_table = _get_table(tx, "tmp")
+            keys = metadir.config.keys
+            tmp_table.insert_many(
+                [
+                    robust_dict(
+                        {
+                            k: v
+                            for k, v in f.items()
+                            if not keys or k in keys or k.startswith("_")
+                        }
+                    )
+                    for f in table
+                ]
+            )
+            table = table.drop()
+            table = _get_table(tx)
+            table.insert_many([i for i in tmp_table])
 
         log.info(f"{len(table)} exsiting files in `{tx}`")
 

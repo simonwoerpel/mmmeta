@@ -56,7 +56,7 @@ def flatten_dict(d):
 
 def robust_dict(d):
     # no typing for better comparison performance
-    return clean_dict({k: str(v) for k, v in flatten_dict(d).items()})
+    return {k: str(v) for k, v in clean_dict(flatten_dict(d)).items()}
 
 
 def ensure_path(file_path):
