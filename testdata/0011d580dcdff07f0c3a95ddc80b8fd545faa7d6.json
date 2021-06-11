@@ -1,1 +1,43 @@
-{"url": "https://www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP16/Drucksachen/5000/16_5934_D.pdf", "request_id": "GET:https#//www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP16/Drucksachen/5000/16_5934_D.pdf", "status_code": 200, "content_hash": "0011d580dcdff07f0c3a95ddc80b8fd545faa7d6", "headers": {"date": "Thu, 27 May 2021 18:43:23 GMT", "server": "Apache", "cache-control": "public, must-revalidate, max-age=1", "last-modified": "Thu, 18 Apr 2019 13:00:26 GMT", "etag": "\"3b30df02-3573-4242-a206-2146073a9466-1555592426332\"", "content-type": "application/pdf", "content-length": "167324", "x-varnish": "8887289", "age": "0", "via": "1.1 Varnish", "accept-ranges": "bytes", "access-control-allow-origin": "*"}, "retrieved_at": "2021-05-27T18:43:23.792527", "title": "Schulgr\u00f6\u00dfe und damit zusammenh\u00e4ngende m\u00f6gliche Schlie\u00dfungen von Grundschulstandorten in den Landkreisen Karlsruhe und Calw sowie im Enzkreis", "reference": "16/5934", "published_at": "2019-04-18", "originators": ["Urheber: FDP/DVP"], "modified_at": "2019-04-18T13:00:26", "publisher": {"type": "parliament", "name": "Landtag von Baden-W\u00fcrttemberg", "url": "https://www.landtag-bw.de/home/dokumente/parlamentsdokumentation.html", "jurisdiction": {"id": "bw", "name": "Baden-W\u00fcrttemberg"}}, "legislative_term": 16, "document_id": 5934, "foreign_id": "bw-16/5934", "_file_name": "0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.data.pdf"}
+{
+  "url": "https://www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP16/Drucksachen/5000/16_5934_D.pdf",
+  "request_id": "GET:https#//www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP16/Drucksachen/5000/16_5934_D.pdf",
+  "status_code": 200,
+  "content_hash": "0011d580dcdff07f0c3a95ddc80b8fd545faa7d6",
+  "headers": {
+    "date": "Thu, 27 May 2021 18:43:23 GMT",
+    "server": "Apache",
+    "cache-control": "public, must-revalidate, max-age=1",
+    "last-modified": "Thu, 18 Apr 2019 13:00:26 GMT",
+    "etag": "\"3b30df02-3573-4242-a206-2146073a9466-1555592426332\"",
+    "content-type": "application/pdf",
+    "content-length": "167324",
+    "x-varnish": "8887289",
+    "age": "0",
+    "via": "1.1 Varnish",
+    "accept-ranges": "bytes",
+    "access-control-allow-origin": "*"
+  },
+  "retrieved_at": "2021-05-27T18:43:23.792527",
+  "title": "Schulgröße und damit zusammenhängende mögliche Schließungen von Grundschulstandorten in den Landkreisen Karlsruhe und Calw sowie im Enzkreis",
+  "reference": "16/5934",
+  "published_at": "2019-04-18",
+  "originators": [
+    "Urheber: FDP/DVP"
+  ],
+  "modified_at": "2019-04-18T13:00:26",
+  "publisher": {
+    "type": "parliament",
+    "name": "Landtag von Baden-Württemberg",
+    "url": "https://www.landtag-bw.de/home/dokumente/parlamentsdokumentation.html",
+    "jurisdiction": {
+      "id": "bw",
+      "name": "Baden-Württemberg"
+    }
+  },
+  "legislative_term": 16,
+  "document_id": 5934,
+  "foreign_id": "bw-16/5934",
+  "_file_name": "0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.data.pdf",
+  "int_value": 2,
+  "bool_value": true
+}

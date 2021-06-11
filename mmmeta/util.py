@@ -1,7 +1,10 @@
 import os
-from datetime import datetime
+
+# from datetime import datetime
 from hashlib import sha1
 from pathlib import Path
+
+from banal import clean_dict
 
 BUF_SIZE = 1024 * 1024 * 16
 HASH_LENGTH = 40  # sha1
@@ -30,10 +33,12 @@ def cast(value):
             return int(value)
         return float(value)
     except (TypeError, ValueError):
-        try:
-            return datetime.fromisoformat(value)
-        except ValueError:
-            return value
+        return value
+        # FIXME
+        # try:
+        #     return datetime.fromisoformat(value)
+        # except ValueError:
+        #     return value
 
 
 def flatten_dict(d):
@@ -47,6 +52,11 @@ def flatten_dict(d):
                 yield key, value
 
     return dict(items())
+
+
+def robust_dict(d):
+    # no typing for better comparison performance
+    return clean_dict({k: str(v) for k, v in flatten_dict(d).items()})
 
 
 def ensure_path(file_path):
@@ -67,3 +77,10 @@ def checksum(file_name):
                     break
                 digest.update(block)
         return str(digest.hexdigest())
+
+
+def dict_is_subset(dict1, dict2, ignore=set()):
+    """
+    check if dict1 is contained in dict2 (including values)
+    """
+    return len(set(dict1.items()) - set(dict2.items()) - ignore) == 0

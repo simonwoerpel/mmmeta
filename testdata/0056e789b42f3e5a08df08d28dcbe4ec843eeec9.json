@@ -1,1 +1,43 @@
-{"url": "https://www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP15/Drucksachen/1000/15_1722_D.pdf", "request_id": "GET:https#//www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP15/Drucksachen/1000/15_1722_D.pdf", "status_code": 200, "content_hash": "0056e789b42f3e5a08df08d28dcbe4ec843eeec9", "headers": {"date": "Thu, 27 May 2021 20:01:28 GMT", "server": "Apache", "cache-control": "public, must-revalidate, max-age=1", "last-modified": "Wed, 14 Sep 2016 22:25:40 GMT", "etag": "\"1d7612ac-b0a8-4123-9005-01a61f58fafc-1473891940551\"", "content-type": "application/pdf", "content-length": "114191", "x-varnish": "7262025", "age": "0", "via": "1.1 Varnish", "accept-ranges": "bytes", "access-control-allow-origin": "*"}, "retrieved_at": "2021-05-27T20:01:28.716713", "title": "\u00dcberg\u00e4nge von der Grundschule auf weiterf\u00fchrende Schulen im Landkreis B\u00f6blingen", "reference": "15/1722", "published_at": "2012-06-18", "originators": ["Urheber: CDU"], "modified_at": "2016-09-14T22:25:40", "publisher": {"type": "parliament", "name": "Landtag von Baden-W\u00fcrttemberg", "url": "https://www.landtag-bw.de/home/dokumente/parlamentsdokumentation.html", "jurisdiction": {"id": "bw", "name": "Baden-W\u00fcrttemberg"}}, "legislative_term": 15, "document_id": 1722, "foreign_id": "bw-15/1722", "_file_name": "0056e789b42f3e5a08df08d28dcbe4ec843eeec9.data.pdf"}
+{
+  "url": "https://www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP15/Drucksachen/1000/15_1722_D.pdf",
+  "request_id": "GET:https#//www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP15/Drucksachen/1000/15_1722_D.pdf",
+  "status_code": 200,
+  "content_hash": "0056e789b42f3e5a08df08d28dcbe4ec843eeec9",
+  "headers": {
+    "date": "Thu, 27 May 2021 20:01:28 GMT",
+    "server": "Apache",
+    "cache-control": "public, must-revalidate, max-age=1",
+    "last-modified": "Wed, 14 Sep 2016 22:25:40 GMT",
+    "etag": "\"1d7612ac-b0a8-4123-9005-01a61f58fafc-1473891940551\"",
+    "content-type": "application/pdf",
+    "content-length": "114191",
+    "x-varnish": "7262025",
+    "age": "0",
+    "via": "1.1 Varnish",
+    "accept-ranges": "bytes",
+    "access-control-allow-origin": "*"
+  },
+  "retrieved_at": "2021-05-27T20:01:28.716713",
+  "title": "Übergänge von der Grundschule auf weiterführende Schulen im Landkreis Böblingen",
+  "reference": "15/1722",
+  "published_at": "2012-06-18",
+  "originators": [
+    "Urheber: CDU"
+  ],
+  "modified_at": "2016-09-14T22:25:40",
+  "publisher": {
+    "type": "parliament",
+    "name": "Landtag von Baden-Württemberg",
+    "url": "https://www.landtag-bw.de/home/dokumente/parlamentsdokumentation.html",
+    "jurisdiction": {
+      "id": "bw",
+      "name": "Baden-Württemberg"
+    }
+  },
+  "legislative_term": 15,
+  "document_id": 1722,
+  "foreign_id": "bw-15/1722",
+  "_file_name": "0056e789b42f3e5a08df08d28dcbe4ec843eeec9.data.pdf",
+  "int_value": 2,
+  "bool_value": true
+}
