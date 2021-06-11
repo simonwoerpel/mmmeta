@@ -1,6 +1,11 @@
 # changelog
 
-## 3.1.2
+## 0.4.0
+
+- Refactor the whole thing about meta db and detection of missing files
+- metadata is now an "appendonly'ish csv" that is very performant and comfortable to sync between machines
+
+## 0.3.2
 
 - Implement soft deletion
 
