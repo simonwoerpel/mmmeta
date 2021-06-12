@@ -4,10 +4,11 @@ import dataset
 from sqlalchemy.sql import func
 
 from . import settings
+from .backend.appendonly import AppendOnlyBackend
 from .backend.filesystem import FilesystemBackend
 from .backend.store import Store
 from .config import Config
-from .db import generate_meta_db, update_state_db
+from .db import generate_metadata, update_state_db
 from .file import FilesWrapper
 
 
@@ -16,9 +17,11 @@ class Metadir:
         self._base_path = base_path or settings.MMMETA
         self._files_root = files_root or base_path or settings.MMMETA_FILES_ROOT
         self._backend = FilesystemBackend(os.path.join(self._base_path, "_mmmeta"))
-        self._meta_db_path = f'sqlite:///{self._backend.get_path("meta.db")}'
-        self._state_db_path = f'sqlite:///{self._backend.get_path("state.db")}'
         self.config = Config(self)
+        self._metadata = AppendOnlyBackend(
+            self._backend.get_path("db"), self.config.unique
+        )
+        self._db_path = f'sqlite:///{self._backend.get_path("state.db")}'
         self.store = Store(FilesystemBackend(self._backend.get_path("_store")))
 
     def __repr__(self):
@@ -29,34 +32,33 @@ class Metadir:
 
     @property
     def files(self):
-        return FilesWrapper(self._state_db["files"], self)
-
-    @property
-    def _meta_db(self):
-        return dataset.connect(self._meta_db_path)
-
-    @property
-    def _state_db(self):
-        return dataset.connect(self._state_db_path)
+        return FilesWrapper(self._db["files"], self)
 
     @property  # Shorthand
     def _db(self):
-        return self._state_db
+        return dataset.connect(self._db_path)
 
     def generate(
-        self, path=None, replace=False, ensure=False, ensure_files=False, no_meta=False
+        self,
+        path=None,
+        replace=False,
+        ensure_metadata=False,
+        ensure_files=False,
+        no_meta=False,
     ):
         """
-        generate or update meta db
+        generate or update metadata
         """
         backend = FilesystemBackend(path or self._files_root)
-        return generate_meta_db(backend, self, replace, ensure, ensure_files, no_meta)
+        return generate_metadata(
+            backend, self, replace, ensure_metadata, ensure_files, no_meta
+        )
 
-    def update(self, replace=False):
+    def update(self, replace=False, cleanup=False):
         """
         update local state with meta db
         """
-        return update_state_db(self, replace)
+        return update_state_db(self, replace, cleanup)
 
     def inspect(self):
         """
@@ -77,14 +79,14 @@ class Metadir:
     def state_last_updated(self):
         table = self.files._table.table
         query = func.max(table.c["__state_last_updated"])
-        for res in self._state_db.query(query):
+        for res in self._db.query(query):
             return res.get("max_1")
 
     @property
     def meta_last_updated(self):
         table = self.files._table.table
         query = func.max(table.c["__meta_last_updated"])
-        for res in self._state_db.query(query):
+        for res in self._db.query(query):
             return res.get("max_1")
 
     @property

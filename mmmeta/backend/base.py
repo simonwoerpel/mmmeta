@@ -1,3 +1,4 @@
+import json
 import os
 
 from ..util import cast
@@ -47,6 +48,9 @@ class Backend:
             raise FileNotFoundError(f"Path `{path}` not found in storage `{self}`")
         return self._load(path)
 
+    def load_json(self, path):
+        return json.loads(self.load(path))
+
     def _load(self, path):
         """actual implementation for specific storage"""
         raise NotImplementedError
@@ -65,4 +69,8 @@ class Backend:
 
     def get_children(self, path=".", condition=lambda x: True):
         """list all children under given path that match condition"""
+        raise NotImplementedError
+
+    def delete(self, path=""):
+        """delete everything from path"""
         raise NotImplementedError

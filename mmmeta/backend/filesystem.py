@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from ..util import get_files
 from .base import Backend
@@ -36,3 +37,10 @@ class FilesystemBackend(Backend):
     def get_children(self, path=".", condition=lambda x: True):
         path = self.get_path(path)
         return get_files(path, condition)
+
+    def delete(self, path=""):
+        path = self.get_path(path)
+        if os.path.isdir(path) and not os.path.islink(path):
+            shutil.rmtree(path)
+        elif os.path.exists(path):
+            os.remove(path)

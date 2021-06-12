@@ -66,9 +66,23 @@ def generate(ctx, replace, ensure, ensure_files, no_meta):
 
 
 @cli.command()
+@click.option(
+    "--replace",
+    is_flag=True,
+    default=False,
+    help="Completly replace the local state database",
+    show_default=True,
+)
+@click.option(
+    "--cleanup",
+    is_flag=True,
+    default=False,
+    help="Try to do some data migrations, can be helpful when things break.",
+    show_default=True,
+)
 @click.pass_context
-def update(ctx):
-    ctx.obj["m"].update()
+def update(ctx, replace, cleanup):
+    ctx.obj["m"].update(replace, cleanup)
 
 
 @cli.command()

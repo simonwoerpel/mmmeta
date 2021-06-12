@@ -1,10 +1,11 @@
 import copy
+import json
 import os
+import shutil
 import unittest
 from datetime import datetime
 from importlib import reload
 
-from sqlalchemy.exc import IntegrityError
 import yaml
 from dataset.database import Database
 from dataset.table import Table
@@ -17,7 +18,6 @@ from mmmeta.exceptions import StoreError, ValidationError
 from mmmeta.file import File
 from mmmeta.metadir import Metadir
 
-
 CONFIG = {
     "metadata": {
         "unique": "content_hash",
@@ -29,22 +29,38 @@ CONFIG = {
             "title",
             "originators",
             "publisher:name",
+            "int_value",
+            "bool_value",
         ],
     },
 }
 
 
 def create_config(data=""):
+    os.makedirs("./testdata/_mmmeta", exist_ok=True)
     with open("./testdata/_mmmeta/config.yml", "w") as f:
         yaml.dump(data, f)
 
 
 class Test(unittest.TestCase):
+    def get_m(self, config=""):
+        """
+        init a fresh instance
+        """
+        create_config(config)
+        m = mmmeta("./testdata")
+        m.generate(replace=True)
+        m.update(replace=True)
+        return m
+
     def setUp(self):
-        # FIXME test db transactions?
-        self.meta = mmmeta("./testdata/")
-        self.meta.generate(replace=True)
-        self.meta.update(replace=True)
+        if os.path.exists("./testdata.BCKP"):
+            shutil.rmtree("./testdata.BCKP/")
+        shutil.copytree("./testdata", "./testdata.BCKP")
+
+    def tearDown(self):
+        shutil.rmtree("./testdata/")
+        shutil.move("./testdata.BCKP", "./testdata")
 
     def test_init_via_env(self):
         m = mmmeta()
@@ -65,7 +81,7 @@ class Test(unittest.TestCase):
         self.assertEqual(m._files_root, settings.MMMETA_FILES_ROOT)
 
     def test_init(self):
-        meta = self.meta
+        meta = self.get_m()
         backend = meta._backend
         store = meta.store
         self.assertIsInstance(meta, Metadir)
@@ -78,6 +94,7 @@ class Test(unittest.TestCase):
         self.assertIn("testdata/_mmmeta/_store", str(store))
         self.assertIn("testdata/_mmmeta", backend.get_base_path())
         self.assertTrue(os.path.exists("./testdata/_mmmeta"))
+        self.assertTrue(os.path.exists("./testdata/_mmmeta/db"))
         self.assertTrue(os.path.exists("./testdata/_mmmeta/_store"))
         # other initialization method: mmmeta_root, files_root
         m = mmmeta("foo", "bar")
@@ -85,7 +102,8 @@ class Test(unittest.TestCase):
         self.assertIn("bar", m._files_root)
 
     def test_store(self):
-        store = self.meta.store
+        m = self.get_m()
+        store = m.store
         store["foo"] = "bar"
         self.assertTrue(os.path.exists("./testdata/_mmmeta/_store/foo"))
         self.assertEqual(store["foo"], "bar")
@@ -102,15 +120,13 @@ class Test(unittest.TestCase):
         self.assertIsInstance(store["counter"], int)
         self.assertIsInstance(store["value"], float)
         # touch shorthand
-        self.meta.touch("my_timestamp")
-        self.assertGreaterEqual(datetime.now(), self.meta.store["my_timestamp"])
+        m.touch("my_timestamp")
+        self.assertGreaterEqual(datetime.now().isoformat(), m.store["my_timestamp"])
 
     def test_dbs(self):
-        meta = self.meta
-        self.assertIsInstance(meta._state_db, Database)
-        self.assertIsInstance(meta._meta_db, Database)
+        meta = self.get_m(CONFIG)
+        self.assertIsInstance(meta._db, Database)
         self.assertIsInstance(meta.files._table, Table)
-        self.assertEqual(meta._state_db.url, meta._db.url)
         self.assertTrue(os.path.exists("./testdata/_mmmeta/state.db"))
         # ensure primary key
         self.assertIn(meta.config.unique, meta.files.table.primary_key.columns.keys())
@@ -121,14 +137,12 @@ class Test(unittest.TestCase):
         config["metadata"]["unique"] = "_file_name"
         create_config(config)
         m = mmmeta("./testdata")
-        m.generate()
+        m.generate(replace=True)
         m.update()
         self.assertIn("_file_name", meta.files.table.primary_key.columns.keys())
-        # reset config
-        create_config(CONFIG)
 
     def test_generate(self):
-        meta = self.meta
+        meta = mmmeta("./testdata")
         # generate meta db
         meta.generate()
         # generate state db
@@ -140,13 +154,19 @@ class Test(unittest.TestCase):
         testfiles = list(
             meta._backend.get_children("..", lambda x: x.endswith(".json"))
         )
-        self.assertEqual(len(testfiles), len(meta._meta_db["files"]))
+        self.assertEqual(len(testfiles), len(meta._db["files"]))
         self.assertEqual(len(testfiles), len(meta))
         self.assertTrue(os.path.exists("./testdata/_mmmeta/_store/meta_last_updated"))
         self.assertTrue(os.path.exists("./testdata/_mmmeta/_store/state_last_updated"))
 
+        # no change
+        with self.assertLogs(level="INFO") as cm:
+            meta.generate()
+        count = len(meta.files)
+        self.assertIn(f"INFO:mmmeta.db:Skipped {count} not changed files.", cm[1])
+
     def test_file(self):
-        meta = self.meta
+        meta = self.get_m()
         file = [f for f in meta.files][0]
         self.assertIsInstance(file, File)
         self.assertEqual(file.uid, file["content_hash"])
@@ -170,10 +190,10 @@ class Test(unittest.TestCase):
         self.assertIn(file, meta.files)
         # add a new file
         meta.files.insert({"content_hash": "foo"})
-        self.assertEqual(len(self.meta.files), 11)
+        self.assertEqual(len(meta.files), 11)
 
     def test_config(self):
-        m = self.meta
+        m = self.get_m()
         self.assertIsInstance(m.config, Config)
         self.assertIsNone(m.config["foo"])
         # work with actual config:
@@ -187,25 +207,18 @@ class Test(unittest.TestCase):
 
     def test_validation(self):
         # metadata validation
+        m = self.get_m()
         filedata = {"foo": "bar"}
         with self.assertRaises(ValidationError):
-            self.meta.files.validate(filedata)
-        for file in self.meta.files:
-            self.assertTrue(self.meta.files.validate(file))
+            m.files.validate(filedata)
 
         # all valid if no config given
-        create_config()  # empty config
-        m = mmmeta("./testdata")
-        m.generate()
-        m.update()
+        m = self.get_m()  # empty config
         for file in m.files:
             self.assertTrue(m.files.validate(file))
 
         # more validation
-        create_config(CONFIG)
-        m = mmmeta("./testdata")
-        m.generate(replace=True)
-        m.update(replace=True)
+        m = self.get_m(CONFIG)
         for file in m.files:
             self.assertTrue(m.files.validate(file))
             # only keys from meta config are present in database for each file
@@ -218,12 +231,17 @@ class Test(unittest.TestCase):
 
         # add an invalid file
         # missing primary key
-        with self.assertRaises(IntegrityError):
-            m._meta_db["files"].insert({"foo": "bar"})
-        # primary key but missing required keys
-        m._meta_db["files"].insert({"content_hash": "123", "foo": "bar"})
+        with open("./testdata/invalid.json", "w") as f:
+            json.dump({"foo": 1}, f)
         with self.assertLogs(level="ERROR") as cm:
-            invalid = m.update()[2]
+            invalid = m.generate()[2]
+        self.assertIn("Missing keys", cm.output[0])
+        self.assertEqual(invalid, 1)
+        # primary key but missing required keys
+        with open("./testdata/invalid.json", "w") as f:
+            json.dump({"content_hash": "123", "foo": "bar"}, f)
+        with self.assertLogs(level="ERROR") as cm:
+            invalid = m.generate()[2]
         self.assertIn("Missing keys", cm.output[0])
         self.assertEqual(invalid, 1)
 
@@ -235,10 +253,7 @@ class Test(unittest.TestCase):
                 "uri": "s3://my_bucket/foo/bar/{_file_name}",
             },
         }
-        create_config(config)
-        m = mmmeta("./testdata")
-        m.generate(replace=True)
-        m.update()
+        m = self.get_m(config)
         for file in m.files:
             self.assertIn("amazonaws", file.remote.url)
             self.assertIn(file.name, file.remote.url)
@@ -246,32 +261,19 @@ class Test(unittest.TestCase):
             self.assertTrue(file.remote.uri.startswith("s3://my_bucket"))
 
     def test_delete_file(self):
-        # move metadata file away
-        file = "./testdata/0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.json"
-        os.rename(file, "/tmp/test.json")
+        # remove metadata file
+        m = self.get_m()
+        os.remove("./testdata/0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.json")
         with self.assertLogs(level="WARNING") as cm:
-            res = self.meta.generate(ensure=True)
+            res = m.generate(ensure_metadata=True)
         self.assertEqual(res[3], 1)
-        self.assertIn("soft deleted files in meta.db", cm.output[0])
+        self.assertIn("soft deleted files", cm.output[0])
 
         # soft delete
         with self.assertLogs(level="WARNING") as cm:
-            res = self.meta.update()
+            res = m.update()
         self.assertEqual(res[3], 1)
-        self.assertIn("soft deleted files in meta.db", cm.output[0])
-
-        # actual delete file from meta db
-        self.meta._meta_db["files"].delete(
-            content_hash="0011d580dcdff07f0c3a95ddc80b8fd545faa7d6"
-        )
-        self.assertEqual(self.meta.generate(replace=True)[1], 9)
-        with self.assertLogs(level="WARNING") as cm:
-            res = self.meta.update()
-        self.assertEqual(res[3], 1)
-        self.assertIn("hard deleted files in meta.db", cm.output[1])
-
-        # move back for further tests
-        os.rename("/tmp/test.json", file)
+        self.assertIn("soft deleted files", cm.output[0])
 
     def test_generate_no_meta(self):
         # generate metadir from actual files, no json metadata
@@ -285,7 +287,7 @@ class Test(unittest.TestCase):
         )
         m = mmmeta("./testdata")
         m.generate(replace=True, no_meta=True)
-        m.update()
+        m.update(replace=True)
         # now we just read in all the files (json and pdf) = 20
         self.assertEqual(m.files.count(), 20)
         for file in m.files:
@@ -302,27 +304,32 @@ class Test(unittest.TestCase):
                     file._data.keys(),
                 )
 
-        # reset config
-        create_config()
-
     def test_other_files_root(self):
         # assert that no files are found in different root location
         m = mmmeta("./testdata", "./testdata/other_files")
         m.generate(replace=True)
-        self.assertEqual(m._meta_db["files"].count(), 0)
+        m.update(replace=True)
+        self.assertEqual(m._db["files"].count(), 0)
 
     def test_ensure_actual_files(self):
-        # move actual file away
-        file = "./testdata/0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.data.pdf"
-        os.rename(file, "/tmp/test.pdf")
+        m = self.get_m(CONFIG)
+        # remove actual file
+        os.remove("./testdata/0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.data.pdf")
         with self.assertLogs(level="WARNING") as cm:
-            res = self.meta.update()
-            self.meta.generate(ensure_files=True)
+            m.generate(ensure_files=True)
         # the file is now soft deleted
+        self.assertIn("1 soft deleted files", cm.output[0])
         with self.assertLogs(level="WARNING") as cm:
-            res = self.meta.update()
+            res = m.update()
         self.assertEqual(res[3], 1)
-        self.assertIn("soft deleted files in meta.db", cm.output[0])
+        self.assertIn("1 soft deleted files", cm.output[0])
 
-        # move back for further tests
-        os.rename("/tmp/test.pdf", file)
+    def test_robust_dict(self):
+        # use `util.robust_dict` for comparison performance
+        m = self.get_m(CONFIG)
+        res = m.generate()
+        # nothing changed:
+        self.assertEqual(res[-1], 10)
+        res = m.update()
+        # still nothing changed:
+        self.assertEqual(res[-1], 10)

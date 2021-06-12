@@ -5,9 +5,7 @@ install:
 	pip install twine coverage nose moto pytest pytest-cov black flake8 isort bump2version
 
 test:
-	rm -rf ./testdata/_mmmeta
 	pytest -s --cov=mmmeta --cov-report term-missing
-	rm -rf ./testdata/_mmmeta
 
 build:
 	python setup.py sdist bdist_wheel

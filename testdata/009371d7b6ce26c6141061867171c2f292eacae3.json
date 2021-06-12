@@ -1,1 +1,43 @@
-{"url": "https://www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP16/Drucksachen/8000/16_8918_D.pdf", "request_id": "GET:https#//www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP16/Drucksachen/8000/16_8918_D.pdf", "status_code": 200, "content_hash": "009371d7b6ce26c6141061867171c2f292eacae3", "headers": {"date": "Thu, 27 May 2021 18:20:25 GMT", "server": "Apache", "cache-control": "public, must-revalidate, max-age=1", "last-modified": "Fri, 30 Oct 2020 13:07:34 GMT", "etag": "\"be5501ca-06a6-4fd9-9e69-36bb891edbd3-1604063254443\"", "content-type": "application/pdf", "content-length": "183645", "x-varnish": "8543369", "age": "0", "via": "1.1 Varnish", "accept-ranges": "bytes", "access-control-allow-origin": "*"}, "retrieved_at": "2021-05-27T18:20:25.413969", "title": "Kampagne Verkehrssicherheit \u201eVorsicht. R\u00fccksicht. Umsicht\u201c", "reference": "16/8918", "published_at": "2020-10-30", "originators": ["Urheber: FDP/DVP"], "modified_at": "2020-10-30T13:07:34", "publisher": {"type": "parliament", "name": "Landtag von Baden-W\u00fcrttemberg", "url": "https://www.landtag-bw.de/home/dokumente/parlamentsdokumentation.html", "jurisdiction": {"id": "bw", "name": "Baden-W\u00fcrttemberg"}}, "legislative_term": 16, "document_id": 8918, "foreign_id": "bw-16/8918", "_file_name": "009371d7b6ce26c6141061867171c2f292eacae3.data.pdf"}
+{
+  "url": "https://www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP16/Drucksachen/8000/16_8918_D.pdf",
+  "request_id": "GET:https#//www.landtag-bw.de/files/live/sites/LTBW/files/dokumente/WP16/Drucksachen/8000/16_8918_D.pdf",
+  "status_code": 200,
+  "content_hash": "009371d7b6ce26c6141061867171c2f292eacae3",
+  "headers": {
+    "date": "Thu, 27 May 2021 18:20:25 GMT",
+    "server": "Apache",
+    "cache-control": "public, must-revalidate, max-age=1",
+    "last-modified": "Fri, 30 Oct 2020 13:07:34 GMT",
+    "etag": "\"be5501ca-06a6-4fd9-9e69-36bb891edbd3-1604063254443\"",
+    "content-type": "application/pdf",
+    "content-length": "183645",
+    "x-varnish": "8543369",
+    "age": "0",
+    "via": "1.1 Varnish",
+    "accept-ranges": "bytes",
+    "access-control-allow-origin": "*"
+  },
+  "retrieved_at": "2021-05-27T18:20:25.413969",
+  "title": "Kampagne Verkehrssicherheit „Vorsicht. Rücksicht. Umsicht“",
+  "reference": "16/8918",
+  "published_at": "2020-10-30",
+  "originators": [
+    "Urheber: FDP/DVP"
+  ],
+  "modified_at": "2020-10-30T13:07:34",
+  "publisher": {
+    "type": "parliament",
+    "name": "Landtag von Baden-Württemberg",
+    "url": "https://www.landtag-bw.de/home/dokumente/parlamentsdokumentation.html",
+    "jurisdiction": {
+      "id": "bw",
+      "name": "Baden-Württemberg"
+    }
+  },
+  "legislative_term": 16,
+  "document_id": 8918,
+  "foreign_id": "bw-16/8918",
+  "_file_name": "009371d7b6ce26c6141061867171c2f292eacae3.data.pdf",
+  "int_value": 2,
+  "bool_value": true
+}
