@@ -92,3 +92,9 @@ def inspect(ctx):
     for key, value in meta.inspect().items():
         click.echo(f"{key}: {value}")
     click.echo(f"{meta.store.to_string()}")
+
+
+@cli.command()
+@click.pass_context
+def squash(ctx):
+    ctx.obj["m"].squash()

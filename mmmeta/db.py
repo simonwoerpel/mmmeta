@@ -4,15 +4,16 @@ from itertools import chain
 from pathlib import Path
 
 import dataset
+from banal import ensure_dict
 from sqlalchemy.exc import IntegrityError
 
 from .exceptions import ValidationError
-from .util import checksum, dict_is_subset, robust_dict
+from .util import casted_dict, checksum, dict_diff, dict_is_subset, robust_dict
 
 log = logging.getLogger(__name__)
 
 
-def _upsert(tx, metadir, files, prefix, ts, ensure=False):
+def _upsert(tx, metadir, files, prefix, ts, ensure=False, casted=False):
     # use explicit operations instead of upsert_many to be able to set some
     # more metadata
     table = tx["files"]
@@ -20,6 +21,8 @@ def _upsert(tx, metadir, files, prefix, ts, ensure=False):
     updated = added = invalid = deleted = skipped = 0
     ignore_seen = set((("__seen", ts),))
     for file in files:
+        if casted:
+            file = casted_dict(file)
         if ensure:
             file["__seen"] = ts  # helper to do a quick scan later
         try:
@@ -104,6 +107,10 @@ def _load_files(files):
         }
 
 
+def _get_table(tx, primary_id, name="files"):
+    return tx.get_table(name, primary_id=primary_id, primary_type=tx.types.text)
+
+
 def update_state_db(metadir, replace=False, cleanup=False):
     """
     update remote metadata to local state
@@ -111,23 +118,18 @@ def update_state_db(metadir, replace=False, cleanup=False):
 
     log.info(f"Updating metadata and state for `{metadir}` ...")
 
-    def _get_table(tx, name="files"):
-        return tx.get_table(
-            name, primary_id=metadir.config.unique, primary_type=tx.types.text
-        )
-
     with metadir._db as tx:
         if replace:
             # FIXME implement a soft delete? aka backup db file first
             tx["files"].drop()
 
-        table = _get_table(tx)
+        table = _get_table(tx, metadir.config.unique)
         primary_keys = table.table.primary_key.columns.keys()
         if metadir.config.unique not in primary_keys:
             # table was created before with another primary key
             # this is a bit hacky, but because of SQLite limitations,
             # we just make a new copy of the table with the new primary key...
-            tmp_table = _get_table(tx, "tmp")
+            tmp_table = _get_table(tx, metadir.config.unique, "tmp")
             try:
                 tmp_table.insert_many([i for i in table])
             except IntegrityError as e:
@@ -135,17 +137,17 @@ def update_state_db(metadir, replace=False, cleanup=False):
                     f"Cannot perform `state.db` migration under such circumstances. Is your config correct? `{e}`"  # noqa
                 )
             table.drop()
-            table = _get_table(tx)
+            table = _get_table(tx, metadir.config.unique)
             table.insert_many([i for i in tmp_table])
             tmp_table.drop()
 
         if cleanup:
             log.info("Cleaning up ...")
-            tmp_table = _get_table(tx, "tmp")
+            tmp_table = _get_table(tx, metadir.config.unique, "tmp")
             keys = metadir.config.keys
             tmp_table.insert_many(
                 [
-                    robust_dict(
+                    casted_dict(
                         {
                             k: v
                             for k, v in f.items()
@@ -156,7 +158,7 @@ def update_state_db(metadir, replace=False, cleanup=False):
                 ]
             )
             table = table.drop()
-            table = _get_table(tx)
+            table = _get_table(tx, metadir.config.unique)
             table.insert_many([i for i in tmp_table])
 
         log.info(f"{len(table)} exsiting files in `{tx}`")
@@ -164,8 +166,8 @@ def update_state_db(metadir, replace=False, cleanup=False):
         files = tx["meta_files"]
         metadir._metadata.load(files)
         # use a consistent timestamp for state diff queries
-        ts = datetime.now().isoformat()
-        res = _upsert(tx, metadir, files, "state", ts, ensure=True)
+        ts = datetime.now()
+        res = _upsert(tx, metadir, files, "state", ts, ensure=True, casted=True)
         files.drop()
 
     metadir.touch("state_last_updated")
@@ -212,14 +214,29 @@ def generate_metadata(
         )
 
     with dataset.connect("sqlite:///:memory:") as tx:
-        metadb = tx["files"]
+        metadb = _get_table(tx, metadir.config.unique)
         metadata.load(metadb)
         log.info(f"{metadb.count()} existing files.")
+
+        # keep old state
+        old_state = _get_table(tx, metadir.config.unique, "old_state")
+        old_state.insert_many([i for i in metadb])
 
         res = _upsert(tx, metadir, files, "meta", ts, ensure_metadata)
 
         # export diff to append only db
-        diff = metadb.find(__meta_last_updated=ts)
+        diff = _get_table(tx, metadir.config.unique, "diff")
+        for file in metadb.find(__meta_last_updated=ts):
+            old_file = ensure_dict(
+                old_state.find_one(
+                    **{metadir.config.unique: file[metadir.config.unique]}
+                )
+            )
+            diff_data = {
+                **dict(dict_diff(file, old_file)),
+                **{metadir.config.unique: file[metadir.config.unique]},
+            }
+            diff.insert(diff_data)
         metadata.write(diff)
 
     metadir.touch("meta_last_updated")

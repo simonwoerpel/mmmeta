@@ -1,9 +1,9 @@
 import os
-
-# from datetime import datetime
+from datetime import date, datetime
 from hashlib import sha1
 from pathlib import Path
 
+# from banal import as_bool, clean_dict
 from banal import clean_dict
 
 BUF_SIZE = 1024 * 1024 * 16
@@ -23,7 +23,7 @@ def get_files(directory, condition=lambda x: True):
     )
 
 
-def cast(value):
+def cast(value, with_date=False):
     if not isinstance(value, (str, float, int)):
         return value
     if isinstance(value, str):
@@ -33,12 +33,13 @@ def cast(value):
             return int(value)
         return float(value)
     except (TypeError, ValueError):
+        if with_date:
+            try:
+                return datetime.fromisoformat(value)
+            except ValueError:
+                pass
+        # value = as_bool(value, None)
         return value
-        # FIXME
-        # try:
-        #     return datetime.fromisoformat(value)
-        # except ValueError:
-        #     return value
 
 
 def flatten_dict(d):
@@ -52,6 +53,10 @@ def flatten_dict(d):
                 yield key, value
 
     return dict(items())
+
+
+def casted_dict(d):
+    return {k: cast(v, with_date=True) for k, v in d.items()}
 
 
 def robust_dict(d):
@@ -79,8 +84,20 @@ def checksum(file_name):
         return str(digest.hexdigest())
 
 
+def dict_diff(dict1, dict2):
+    """
+    return key/value pairs from dict1 that are different from dict2
+    """
+    return set(dict1.items()) - set(dict2.items())
+
+
 def dict_is_subset(dict1, dict2, ignore=set()):
     """
     check if dict1 is contained in dict2 (including values)
     """
-    return len(set(dict1.items()) - set(dict2.items()) - ignore) == 0
+    return len(dict_diff(dict1, dict2) - ignore) == 0
+
+
+def datetime_to_json(value):
+    if isinstance(value, date):
+        return value.isoformat()

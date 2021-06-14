@@ -1,4 +1,5 @@
 import copy
+import csv
 import json
 import os
 import shutil
@@ -21,11 +22,12 @@ from mmmeta.metadir import Metadir
 CONFIG = {
     "metadata": {
         "unique": "content_hash",
-        "dedup": {"unique": "foreign_id", "max": "published_at"},
         "file_name": "_file_name",
+        "required": ["foreign_id", "published_at"],
         "include": [
             "reference",
             "modified_at",
+            "published_at",
             "title",
             "originators",
             "publisher:name",
@@ -121,7 +123,7 @@ class Test(unittest.TestCase):
         self.assertIsInstance(store["value"], float)
         # touch shorthand
         m.touch("my_timestamp")
-        self.assertGreaterEqual(datetime.now().isoformat(), m.store["my_timestamp"])
+        self.assertGreaterEqual(datetime.now(), m.store["my_timestamp"])
 
     def test_dbs(self):
         meta = self.get_m(CONFIG)
@@ -333,3 +335,47 @@ class Test(unittest.TestCase):
         res = m.update()
         # still nothing changed:
         self.assertEqual(res[-1], 10)
+
+    def test_typing(self):
+        m = self.get_m(CONFIG)
+        file = m.files.find_one(content_hash="0011d580dcdff07f0c3a95ddc80b8fd545faa7d6")
+        self.assertIsInstance(file["int_value"], int)
+        self.assertIsInstance(file["bool_value"], str)  # FIXME
+        self.assertEqual(file["bool_value"], "True")
+        self.assertIsInstance(file["__meta_last_updated"], datetime)
+        self.assertIsInstance(file["__state_last_updated"], datetime)
+
+    def test_diff_update(self):
+        m = self.get_m(CONFIG)
+        file = m.files.find_one(content_hash="0011d580dcdff07f0c3a95ddc80b8fd545faa7d6")
+        self.assertEqual(file["int_value"], 2)
+        # only one metadata db csv file
+        csv_files = list(m._metadata.get_children())
+        self.assertEqual(len(csv_files), 1)
+        # explicitly change metadata of 1 file
+        data = m._backend.load_json("../0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.json")
+        data["int_value"] = 3
+        m._backend.dump_json("../0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.json", data)
+        m.generate()
+        # now 2 csv files
+        csv_files = list(m._metadata.get_children())
+        self.assertEqual(len(csv_files), 2)
+        last_csv = sorted(csv_files)[-1]
+        with open(last_csv[1]) as f:
+            reader = csv.DictReader(f)
+            data = [r for r in reader]
+        # only 1 file updated
+        self.assertEqual(len(data), 1)
+        data = data[0]
+        self.assertIn("int_value", data.keys())
+        # only the updated keys are in the csv
+        self.assertSetEqual(
+            set(("content_hash", "__meta_last_updated", "int_value")), set(data.keys())
+        )
+        # update again, nothing changes
+        m.generate()
+        csv_files = list(m._metadata.get_children())
+        self.assertEqual(len(csv_files), 2)
+        m.update()
+        file = m.files.find_one(content_hash="0011d580dcdff07f0c3a95ddc80b8fd545faa7d6")
+        self.assertEqual(file["int_value"], 3)

@@ -54,6 +54,9 @@ class Metadir:
             backend, self, replace, ensure_metadata, ensure_files, no_meta
         )
 
+    def squash(self):
+        self._metadata.squash()
+
     def update(self, replace=False, cleanup=False):
         """
         update local state with meta db

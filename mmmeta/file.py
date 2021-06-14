@@ -28,7 +28,7 @@ class File:
         update internal data object and write to state db
         """
         self._data.update(**data)
-        self._data["__state_last_updated"] = datetime.now().isoformat()
+        self._data["__state_last_updated"] = datetime.now()
 
     def save(self):
         with self._metadir._db as db:
