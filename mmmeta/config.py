@@ -5,10 +5,10 @@ from banal import ensure_dict, ensure_list
 class Config:
     """
     metadata:
-      dedup:
-        max: published_at
-        unique: foreign_id
       file_name: _file_name
+      required:
+      - published_at
+      - foreign_id
       include:
       - reference
       - modified_at
@@ -52,8 +52,8 @@ class Config:
             yield self.unique
             yield self.file_name
             meta = ensure_dict(self["metadata"])
-            if "dedup" in meta:
-                for key in ensure_dict(meta["dedup"]).values():
+            if "required" in meta:
+                for key in ensure_list(meta["required"]):
                     yield key
 
         return set(_get_required_keys())

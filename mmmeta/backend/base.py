@@ -1,7 +1,7 @@
 import json
 import os
 
-from ..util import cast
+from ..util import cast, datetime_to_json
 
 
 class Backend:
@@ -51,6 +51,10 @@ class Backend:
     def load_json(self, path):
         return json.loads(self.load(path))
 
+    def dump_json(self, path, content):
+        content = json.dumps(content, default=datetime_to_json)
+        self.save(path, content)
+
     def _load(self, path):
         """actual implementation for specific storage"""
         raise NotImplementedError
@@ -60,7 +64,7 @@ class Backend:
         self.save(path, value)
         return value
 
-    def get_value(self, path, transform=cast):
+    def get_value(self, path, transform=lambda x: cast(x, with_date=True)):
         """simply get values from a path location"""
         if not self.exists(path):
             return

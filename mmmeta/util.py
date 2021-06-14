@@ -1,10 +1,9 @@
 import os
-
-# from datetime import datetime
+from datetime import date, datetime
 from hashlib import sha1
 from pathlib import Path
 
-from banal import clean_dict
+# from banal import as_bool, clean_dict
 
 BUF_SIZE = 1024 * 1024 * 16
 HASH_LENGTH = 40  # sha1
@@ -23,22 +22,25 @@ def get_files(directory, condition=lambda x: True):
     )
 
 
-def cast(value):
+def cast(value, with_date=False):
     if not isinstance(value, (str, float, int)):
         return value
     if isinstance(value, str):
         value = value.strip()
+        if not value:  # ''
+            return None
     try:
         if float(value) == int(float(value)):
             return int(value)
         return float(value)
     except (TypeError, ValueError):
+        if with_date:
+            try:
+                return datetime.fromisoformat(value)
+            except ValueError:
+                pass
+        # value = as_bool(value, None)
         return value
-        # FIXME
-        # try:
-        #     return datetime.fromisoformat(value)
-        # except ValueError:
-        #     return value
 
 
 def flatten_dict(d):
@@ -54,9 +56,15 @@ def flatten_dict(d):
     return dict(items())
 
 
+def casted_dict(d, ignore_keys=[]):
+    return {
+        k: cast(v, with_date=True) if k not in ignore_keys else v for k, v in d.items()
+    }
+
+
 def robust_dict(d):
     # no typing for better comparison performance
-    return {k: str(v) for k, v in clean_dict(flatten_dict(d)).items()}
+    return {k: str(v) if v else None for k, v in flatten_dict(d).items()}
 
 
 def ensure_path(file_path):
@@ -79,8 +87,20 @@ def checksum(file_name):
         return str(digest.hexdigest())
 
 
+def dict_diff(dict1, dict2):
+    """
+    return key/value pairs from dict1 that are different from dict2
+    """
+    return set(dict1.items()) - set(dict2.items())
+
+
 def dict_is_subset(dict1, dict2, ignore=set()):
     """
     check if dict1 is contained in dict2 (including values)
     """
-    return len(set(dict1.items()) - set(dict2.items()) - ignore) == 0
+    return len(dict_diff(dict1, dict2) - ignore) == 0
+
+
+def datetime_to_json(value):
+    if isinstance(value, date):
+        return value.isoformat()

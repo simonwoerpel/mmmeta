@@ -12,6 +12,9 @@ class AppendOnlyBackend(FilesystemBackend):
         super().__init__(base_path)
         self.unique = unique
 
+    def _get_table(self, tx, name="tmp"):
+        return tx.get_table(name, primary_id=self.unique, primary_type=tx.types.text)
+
     def write(self, table, suffix="append"):
         fp = self.get_path(datetime.now().isoformat() + f".{suffix}")
         ensure_directory(self.base_path)  # FIXME
@@ -54,10 +57,14 @@ class AppendOnlyBackend(FilesystemBackend):
         for step in reversed(list(_get_steps())):
             for row in self.load_step(step):
                 row = robust_dict(row)
+                keys = row.get("__mmmeta_keys")
+                if keys:
+                    keys = keys.split(",") + [self.unique]
+                    row = {k: v for k, v in row.items() if k in keys}
                 table.upsert(row, [self.unique])
 
     def squash(self):
         with dataset.connect("sqlite:///:memory:") as tx:
-            table = tx["data"]
+            table = self._get_table(tx)
             self.load(table)
             self.write(table, "squashed")
