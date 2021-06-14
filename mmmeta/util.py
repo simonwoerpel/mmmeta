@@ -4,7 +4,6 @@ from hashlib import sha1
 from pathlib import Path
 
 # from banal import as_bool, clean_dict
-from banal import clean_dict
 
 BUF_SIZE = 1024 * 1024 * 16
 HASH_LENGTH = 40  # sha1
@@ -28,6 +27,8 @@ def cast(value, with_date=False):
         return value
     if isinstance(value, str):
         value = value.strip()
+        if not value:  # ''
+            return None
     try:
         if float(value) == int(float(value)):
             return int(value)
@@ -55,13 +56,15 @@ def flatten_dict(d):
     return dict(items())
 
 
-def casted_dict(d):
-    return {k: cast(v, with_date=True) for k, v in d.items()}
+def casted_dict(d, ignore_keys=[]):
+    return {
+        k: cast(v, with_date=True) if k not in ignore_keys else v for k, v in d.items()
+    }
 
 
 def robust_dict(d):
     # no typing for better comparison performance
-    return {k: str(v) for k, v in clean_dict(flatten_dict(d)).items()}
+    return {k: str(v) if v else None for k, v in flatten_dict(d).items()}
 
 
 def ensure_path(file_path):

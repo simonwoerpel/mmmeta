@@ -69,3 +69,25 @@ class Test(unittest.TestCase):
             # foo=bar was overriden in 2nd append
             empty = [i for i in table.find(foo="bar")]
             self.assertEqual(len(empty), 0)
+
+    def test_partial(self):
+        # partial keys update: set __mmmeta_keys
+        backend = AppendOnlyBackend("./testdata/aof", unique="uid")
+        with dataset.connect("sqlite:///:memory:") as tx:
+            table = tx["data"]
+            for i in range(1000):
+                table.insert(
+                    {"uid": i, "foo": "bar", "ts": datetime.now(), "data": str(uuid4())}
+                )
+            backend.write(table)
+            data = [{"uid": 1, "foo": "bar2", "__mmmeta_keys": "foo"}]
+            backend.write((d for d in data))
+
+        children = list(sorted(backend.get_children()))
+        self.assertEqual(len(children), 2)
+
+        with dataset.connect("sqlite:///:memory:") as tx:
+            table = tx["data"]
+            backend.load(table)
+            data = table.find_one(uid=1)
+            self.assertEqual(data["foo"], "bar2")

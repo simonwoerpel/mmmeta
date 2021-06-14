@@ -344,6 +344,7 @@ class Test(unittest.TestCase):
         self.assertEqual(file["bool_value"], "True")
         self.assertIsInstance(file["__meta_last_updated"], datetime)
         self.assertIsInstance(file["__state_last_updated"], datetime)
+        self.assertIsInstance(file["published_at"], datetime)
 
     def test_diff_update(self):
         m = self.get_m(CONFIG)
@@ -370,7 +371,8 @@ class Test(unittest.TestCase):
         self.assertIn("int_value", data.keys())
         # only the updated keys are in the csv
         self.assertSetEqual(
-            set(("content_hash", "__meta_last_updated", "int_value")), set(data.keys())
+            set(("content_hash", "__meta_last_updated", "int_value", "__mmmeta_keys")),
+            set(data.keys()),
         )
         # update again, nothing changes
         m.generate()
@@ -379,3 +381,49 @@ class Test(unittest.TestCase):
         m.update()
         file = m.files.find_one(content_hash="0011d580dcdff07f0c3a95ddc80b8fd545faa7d6")
         self.assertEqual(file["int_value"], 3)
+
+        # update values to None
+        data = m._backend.load_json("../0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.json")
+        data["int_value"] = None
+        m._backend.dump_json("../0011d580dcdff07f0c3a95ddc80b8fd545faa7d6.json", data)
+        data = m._backend.load_json("../0056e789b42f3e5a08df08d28dcbe4ec843eeec9.json")
+        data["bool_value"] = None
+        m._backend.dump_json("../0056e789b42f3e5a08df08d28dcbe4ec843eeec9.json", data)
+        m.generate()
+        csv_files = list(m._metadata.get_children())
+        self.assertEqual(len(csv_files), 3)
+        last_csv = sorted(csv_files)[-1]
+        with open(last_csv[1]) as f:
+            reader = csv.DictReader(f)
+            data = [r for r in reader]
+        # only 2 files updated
+        self.assertEqual(len(data), 2)
+        self.assertIn("int_value", data[0].keys())
+        self.assertSetEqual(
+            set(("int_value", "__meta_last_updated")),
+            set(data[0]["__mmmeta_keys"].split(",")),
+        )
+        self.assertSetEqual(
+            set(("bool_value", "__meta_last_updated")),
+            set(data[1]["__mmmeta_keys"].split(",")),
+        )
+        # only the updated keys are in the csv
+        self.assertSetEqual(
+            set(
+                (
+                    "content_hash",
+                    "__meta_last_updated",
+                    "int_value",
+                    "bool_value",
+                    "__mmmeta_keys",
+                )
+            ),
+            set(data[0].keys()),
+        )
+        m.update()
+        file = m.files.find_one(content_hash="0011d580dcdff07f0c3a95ddc80b8fd545faa7d6")
+        self.assertEqual(file["int_value"], None)
+        self.assertEqual(file["bool_value"], "True")
+        file = m.files.find_one(content_hash="0056e789b42f3e5a08df08d28dcbe4ec843eeec9")
+        self.assertEqual(file["int_value"], 2)
+        self.assertEqual(file["bool_value"], None)

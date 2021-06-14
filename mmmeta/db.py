@@ -198,7 +198,7 @@ def generate_metadata(
         log.info(f"Updating metadata for `{filebackend}` ...")
 
     # use a consistent timestamp for state diff queries
-    ts = datetime.now().isoformat()
+    ts = datetime.now()
 
     # either read in json metadata files or actual files (only local filesystem here)
     if no_meta:
@@ -232,9 +232,11 @@ def generate_metadata(
                     **{metadir.config.unique: file[metadir.config.unique]}
                 )
             )
+            changed = dict(dict_diff(file, old_file))
             diff_data = {
-                **dict(dict_diff(file, old_file)),
+                **changed,
                 **{metadir.config.unique: file[metadir.config.unique]},
+                **{"__mmmeta_keys": ",".join(changed.keys())},
             }
             diff.insert(diff_data)
         metadata.write(diff)
