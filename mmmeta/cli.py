@@ -1,8 +1,9 @@
-import click
 import logging
 
-from mmmeta import settings, mmmeta
+import click
 
+from mmmeta import mmmeta, settings
+from mmmeta.logging import configure_logging
 
 log = logging.getLogger(__name__)
 
@@ -20,9 +21,15 @@ log = logging.getLogger(__name__)
     help="Base path for actual files to generate metadir from",
     show_default=True,
 )
+@click.option(
+    "--log-level",
+    default=settings.LOGGING,
+    help="Set logging level",
+    show_default=True,
+)
 @click.pass_context
-def cli(ctx, metadir, files_root, invoke_without_command=True):
-    logging.basicConfig(level=logging.INFO)
+def cli(ctx, metadir, files_root, log_level, invoke_without_command=True):
+    configure_logging(log_level)
     if not metadir:
         raise click.BadParameter("Missing metadir root")
     if ctx.obj is None:

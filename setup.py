@@ -31,7 +31,7 @@ setup(
         "banal",
         "pyyaml",
         "python-dateutil",
-        "awesome-slugify",
+        "structlog",
     ],
     zip_safe=False,
 )
