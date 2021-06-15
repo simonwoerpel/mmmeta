@@ -170,7 +170,9 @@ def update_state_db(metadir, replace=False, cleanup=False):
         res = _upsert(tx, metadir, files, "state", ts, ensure=True, casted=True)
         files.drop()
 
-    metadir.touch("state_last_updated")
+    if any(res[:4]):
+        # added or updated:
+        metadir.touch("state_last_updated")
     return res
 
 
@@ -241,6 +243,8 @@ def generate_metadata(
             diff.insert(diff_data)
         metadata.write(diff)
 
-    metadir.touch("meta_last_updated")
+    if any(res[:4]):
+        # added or updated:
+        metadir.touch("meta_last_updated")
 
     return res
