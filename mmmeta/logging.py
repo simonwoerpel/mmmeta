@@ -12,7 +12,7 @@ LOG_FORMAT_TEXT = "TEXT"
 LOG_FORMAT_JSON = "JSON"
 
 
-def configure_logging(level=None):
+def configure_logging(level=settings.LOGGING):
     """
     default: mmmeta = INFO, all others = WARNING
     """
