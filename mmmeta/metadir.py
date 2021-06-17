@@ -1,4 +1,6 @@
+import csv
 import os
+import sys
 
 import dataset
 from sqlalchemy.sql import func
@@ -77,6 +79,17 @@ class Metadir:
         store a timestamp with given key
         """
         return self.store.touch(key)
+
+    def dump(self, out=sys.stdout):
+        """
+        dump csv
+        """
+        file = self.files.find_one()
+        columns = set(file._data.keys()) | set(vars(file.remote).keys())
+        writer = csv.DictWriter(out, fieldnames=columns)
+        writer.writeheader()
+        for file in self.files:
+            writer.writerow(file.serialize())
 
     @property
     def state_last_updated(self):
