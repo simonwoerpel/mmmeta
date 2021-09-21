@@ -91,7 +91,7 @@ def dict_diff(dict1, dict2):
     """
     return key/value pairs from dict1 that are different from dict2
     """
-    return set(dict1.items()) - set(dict2.items())
+    return set(flatten_dict(dict1).items()) - set(flatten_dict(dict2).items())
 
 
 def dict_is_subset(dict1, dict2, ignore=set()):

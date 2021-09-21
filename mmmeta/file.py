@@ -34,6 +34,9 @@ class File:
         with self._metadir._db as db:
             db["files"].update(self._data, [self._unique])
 
+    def serialize(self):
+        return {**self._data, **vars(self.remote)}
+
     @property
     def uid(self):
         return self._data[self._unique]

@@ -105,3 +105,9 @@ def inspect(ctx):
 @click.pass_context
 def squash(ctx):
     ctx.obj["m"].squash()
+
+
+@cli.command()
+@click.pass_context
+def dump(ctx):
+    ctx.obj["m"].dump()

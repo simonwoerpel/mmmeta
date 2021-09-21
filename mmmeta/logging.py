@@ -1,10 +1,14 @@
+import logging
 import sys
 import time
 import uuid
-import logging
+
 import structlog
-from structlog.contextvars import merge_contextvars
-from structlog.contextvars import clear_contextvars, bind_contextvars
+from structlog.contextvars import (
+    bind_contextvars,
+    clear_contextvars,
+    merge_contextvars,
+)
 
 from . import settings
 
@@ -12,12 +16,12 @@ LOG_FORMAT_TEXT = "TEXT"
 LOG_FORMAT_JSON = "JSON"
 
 
-def configure_logging(level=settings.LOGGING):
+def configure_logging(level=settings.LOGGING, out=sys.stdout):
     """
     default: mmmeta = INFO, all others = WARNING
     """
     if level is None:
-        _configure()
+        _configure(level=logging.INFO, out=out)
         for logger_name in logging.root.manager.loggerDict:
             if "mmmeta" not in logger_name:
                 logger = logging.getLogger(logger_name)
@@ -25,11 +29,11 @@ def configure_logging(level=settings.LOGGING):
     else:
         if isinstance(level, str):
             level = level.upper()
-        _configure(level)
+        _configure(level, out=out)
 
 
 # borrowed from aleph servicelayer
-def _configure(level=logging.INFO):
+def _configure(level=logging.INFO, out=sys.stdout):
     """Configure log levels and structured logging"""
     common_processors = [
         structlog.stdlib.add_log_level,
@@ -66,7 +70,7 @@ def _configure(level=logging.INFO):
     )
 
     # handler for low level logs that should be sent to STDOUT
-    out_handler = logging.StreamHandler(sys.stdout)
+    out_handler = logging.StreamHandler(out)
     out_handler.setLevel(level)
     out_handler.addFilter(_MaxLevelFilter(logging.WARNING))
     out_handler.setFormatter(formatter)
