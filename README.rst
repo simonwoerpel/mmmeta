@@ -3,219 +3,168 @@
 mmmeta
 ======
 
-Handle meta information and local state about files from remote
-(read-only) locations.
-
-example usecase
----------------
+``mmmeta`` is a command-line toolkit and python library to incrementally
+synchronize file metadata between an **archive** that stores all files
+and their metadata, **publishers** that add new files to the archive and
+**consumers** that process these files (or a subset of them).
 
 It’s better explained by a concrete example:
 
-**Server** scrapes documents and stores them with metadata
+**Publisher** incrementally scrapes documents and stores them with
+metadata in the **archive**.
 
-**Client1** wants to download all files with
-``document_type="contract"``
+**Consumer** wants to import some files by a given filter criterion and
+keep track of the ones that are already imported.
 
-**Client2** wants to import all documents scraped not longer than 1 week
-ago into a database, but only the ones that are not imported yet
+As such file collections grow, we only want to transfer as less data as
+possible between **archive**, **publisher** and **consumer**.
 
 synopsis
-~~~~~~~~
+--------
 
 To clarify the terms used in this manual:
 
 -  **files**: actual files (like pdfs…)
 -  **metadata files**: json files that contain metadata for actual files
--  **metadata db**: sqlite database containing metadata for all files
-   from the remote
--  **remote**: the “source of truth” where files, metadata files and
-   metadata db are stored. A remote can still be a local folder on the
-   same machine…
--  **client**: A client that has read-only access to the remote
--  **state db**: sqlite database, stored only on the client, containing
+-  **archive**: the “source of truth” where files, metadata files and
+   metadata db are stored.
+-  **publisher**: an application that adds new files to the **archive**
+-  **consumer**: an application that processes the files from
+   **archive** (with read-only access)
+-  **state db**: sqlite database, stored only on **consumers**, tracking
    local state for files
+-  **metadir**: a directory named ``_mmmeta`` that is
+   `synced <#synchronization>`__ between **archive**, **publishers** and
+   **consumers**
 -  `store <#store>`__: A simple implementation of a key-value store for
    additional information
--  **metadir**: a directory named ``_mmmeta`` that is
-   `synced <#synchronization>`__ between remote and client and contains
-   metadata db, store, and (on the client) state db
 
-how does this scenario work?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Usage
+-----
 
-**Server** 1. Stores a metadata json file for each file 2. Generates
-(and updates) a *metadir*
+Archive
+~~~~~~~
 
-**Client1** 1. Syncs remote *metadir* 2. Merge remote *metadata db* with
-local *state db* 3. Query *state db* for given criteria 4. For each
-result download the actual file from the remote
+The archive can be any file-like (remote) location for the actual files,
+their *metadata files* and the *metadir*. **Publishers** would need
+write access to it, **Consumers** only need read-only.
 
-**Client2** 1. Syncs remote *metadir* 2. Merge remote *metadata db* with
-local *state db* 3. Query the *state db* for remote metadata
-``retrieved_at=<date>`` and local state ``imported=False``
+``mmmeta`` usually doesn’t operate on the archive itself (as it would be
+most likely just a data bucket), instead, maintaining the archive is
+done by **publishers**
 
-**mmmeta** automates *almost ;)* all of this:
+Publisher
+~~~~~~~~~
 
-implementation of this scenario with mmmeta
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+An application that writes to the archive. This can be for example a
+scraper that incrementally adds new files.
 
-Server
-^^^^^^
+The usual workflow would look like this:
 
-scrapes document and stores them with metadata
+1. `synchronize <#synchronization>`__ *metadir* from archive
+2. Run application (e.g. scraper) optionally based on synced metadata
+3. Update *metadir* (see below)
+4. `synchronize <#synchronization>`__ *metadir* back to archive
 
-a) Server stores files locally
-''''''''''''''''''''''''''''''
-
-If the files (and their metadata) are stored locally, metadata
-generation is as easy as looping through all of the json files and
-generate the database out of it. This can be done via command line
-inside the directory of the *metadata files*:
+updating *metadir*
+^^^^^^^^^^^^^^^^^^
 
 ::
 
    mmmeta generate
 
-This will loop through all json files create a sqlite database in
-``./_mmmeta/meta.db``
+This will loop through all json files in the current directory and
+create or add csv data in ``./_mmmeta/db/``
 
 For other path locations, see `initialization <#initialization>`__
 
-When new *metadata files* are added, simply re-run this command. It will
-just update the *meta db* without deleting existing entries, which means
-the old *metadata files* don’t need to stay on the server (see next
-situation).
+managing files presence
+^^^^^^^^^^^^^^^^^^^^^^^
 
-b) Server downloads files locally but then pushes into a cloud
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-Here we don’t have all the files locally, only a subset (the new
-downloaded ones).
-
-First, `synchronize <#synchronization>`__ cloud *metadir* to local (aka
-the server).
-
-Then update metadata as described above:
+Per default, ``mmmeta generate`` only adds new files based on the
+*metadata files* available (it doesn’t even check the presence of the
+actual files). To “clean up” (e.g. delete non-existing files), the cli
+interface provides the following options:
 
 ::
 
-   mmmeta generate
+     --replace       Completly replace the meta database
+     --ensure        Ensure metadata files are present, soft-delete non-existing
+     --ensure-files  Ensure actual files are present (for local store only),
+                     soft-delete non-existing
+     --no-meta       Read in actual files instead of json metadata files
 
-Last, `synchronize <#synchronization>`__ the updated *metadir* back to
-the cloud.
+Consumer
+~~~~~~~~
 
-c) Server directly pushes files to cloud
-''''''''''''''''''''''''''''''''''''''''
+An application that processes the files, e.g. import them into a
+database.
 
-Here, we don’t have any file and its metadata locally (on the server).
-Updating the *meta db* happens within the python code of the
-application:
+``mmmeta`` is used to merge *remote* metadata into the local *state db*
+(sqlite) and provides some functionallity to query and manage this data
+in applications.
 
-First, `synchronize <#synchronization>`__ cloud *metadir* to local (aka
-the server).
+The usual workflow would look like this:
 
-Then, run your application…
+1. `synchronize <#synchronization>`__ *metadir* from archive
+2. Update local *state db* (see below)
+3. Run application that alters local state (see example below)
 
-.. code:: python
+update local state db
+^^^^^^^^^^^^^^^^^^^^^
 
-   from mmmeta import mmmeta
-
-   m = mmmeta("./path/to/metadir")
-
-   for data in scraper:
-       m.files.insert(**data)
-       # or upsert, if you want:
-       m.files.upsert(**data, [keys])  # e.g. "content_hash"
-
-This will update the *meta db* in the *metadir*
-
-Last, `synchronize <#synchronization>`__ the updated *metadir* back to
-the cloud.
-
-Client1
-^^^^^^^
-
-wants to download all files with ``document_type="contract"``
-
-First, `synchronize <#synchronization>`__ remote *metadir* to local.
-
-Then,
-
-.. code:: python
-
-   from mmmeta import mmmeta
-
-   m = mmmeta("./path/to/metadir")
-
-   for file in m.files(document_type="contract"):
-       download(file.remote.url)
-
-   def download(url):
-       # implement download based on remote storage
-       # url will be, based on storage, something like:
-       # - file:///path/to/file.pdf (remote is local filesystem)
-       # - s3://bucket/path/to/file.pdf (remote is aws cloud storage)
-       # - https://remote.com/path/to/file.pdf
-       # ...
-
-See `config <#remote>`__ on how to generate remote urls or uris
-
-The
-
-Client2
-^^^^^^^
-
-wants to import all documents scraped not longer than 1 week ago into a
-database, but only the ones that are not imported yet
-
-Therefore the client uses a local state db in the mmmeta.
-
-First, `synchronize <#synchronization>`__ remote metadata db to local
-
-Then, update meta to local state: via command-line:
+via cli:
 
 ::
 
-   MMMETA=./path/to/metadir mmmeta update
+   mmmeta update
 
-or programmatically:
+or via python:
 
 .. code:: python
 
    from mmmeta import mmmeta
 
-   m = mmmeta("./path/to/metadir/")
+   m = mmmeta()
    m.update()
 
-After that, remote metadata and local state are merged and easy usable
-like this:
+For other path locations, see `initialization <#initialization>`__
 
-.. code:: python
-
-   for file in m.files.find(retrieved_at=<date>, imported=False):
-       process_import(file)
-       file["imported"] = True
-       file.save()
+consumer application
+^^^^^^^^^^^^^^^^^^^^
 
 The ``files`` object on a metadir is a wrapper to a `dataset
 table <https://dataset.readthedocs.io/en/latest/api.html#table>`__ with
-all its functionallity, instead that it yields ``File`` objects that you
-can use to alter the state of the files in the database as described in
-the example above.
+all its functionallity, with the addition that it yields
+``mmmeta.file.File`` objects that have a bit extra functionality like
+directly saving and access to “proxy values” (see config below)
+
+.. code:: python
+
+   from mmmeta import mmmeta
+
+   m = mmmeta()
+
+   for file in m.files(document_type="contract", imported=False):
+       download_url = file.remote.url  # see config below
+       process_download(download_url)
+       file["downloaded"] = True
+       file.save()
+
+See `config <#remote>`__ on how to generate remote urls or uris
 
 Initialization
 ~~~~~~~~~~~~~~
 
-On the *client*:
+When **mmmeta** is `initialized <#initialization>`__ with a path
+argument named ``foo``, the directory ``foo/_mmmeta`` will be the
+*metadir*
 
-When **mmmeta** is `initialized <#initialization>`__ with a ``path``,
-the directory ``path/_mmmeta`` will be the *metadir*
-
-``path`` can be set via env var:
+The path ``foo`` can be set via env var:
 
 ::
 
-   MMMETA=./path/ mmmeta update
+   MMMETA=./foo/ mmmeta update
 
 or in scripts:
 
@@ -223,21 +172,14 @@ or in scripts:
 
    from mmmeta import mmmeta
 
-   m = mmmeta("./path/")
+   m = mmmeta("./foo/")
 
-On the *remote*:
-
-Same as client, but for the *metadata files* either recursively inside
-``path`` unless other specified via env var ``MMMETA_FILES_ROOT``
-
-This means, on the *remote* the *metadata files* and the *metadir* don’t
-need to be in the same path location.
-
-Or, speaking of clouds: *metadir* and *actual files* can exist in
-different buckets.
+On `publishers <#publishers>`__ there is an additional env var
+``MMMETA_FILES_ROOT`` if the location for the *actual files* is
+different.
 
 Synchronization
-^^^^^^^^^^^^^^^
+---------------
 
 This package is totally agnostic about the remote storage backend (could
 be a local filesystem location or cloud storage) and doesn’t handle any
