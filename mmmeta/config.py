@@ -27,7 +27,7 @@ class Config:
         config_path = m._backend.get_path("config.yml")
         if m._backend.exists(config_path):
             with open(config_path) as f:
-                config = yaml.load(f)
+                config = yaml.safe_load(f)
             self._config = ensure_dict(config)
         self._metadata = ensure_dict(self["metadata"])
         self._remote = ensure_dict(self["remote"])
