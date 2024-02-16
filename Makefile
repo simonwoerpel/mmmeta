@@ -1,20 +1,24 @@
 all: clean install test
 
 install:
-	pip install -e .
-	pip install twine coverage nose moto pytest pytest-cov black flake8 isort bump2version
+	poetry install --with dev
+
+lint:
+	poetry run flake8 mmmeta --count --select=E9,F63,F7,F82 --show-source --statistics
+	poetry run flake8 mmmeta --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+pre-commit:
+	poetry run pre-commit install
+	poetry run pre-commit run -a
+
+typecheck:
+	poetry run mypy --strict mmmeta
 
 test:
-	pytest -s --cov=mmmeta --cov-report term-missing
+	poetry run pytest -v --capture=sys --cov=mmmeta --cov-report term-missing
 
 build:
-	python setup.py sdist bdist_wheel
-
-prerelease: test readme
-	bump2version patch
-
-release: clean build
-	twine upload dist/*
+	poetry run build
 
 clean:
 	rm -fr build/
@@ -26,6 +30,3 @@ clean:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -fr {} +
-
-readme:
-	pandoc README.md -o README.rst
