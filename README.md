@@ -1,6 +1,8 @@
-[![test](https://github.com/simonwoerpel/mmmeta/actions/workflows/test.yml/badge.svg)](https://github.com/simonwoerpel/mmmeta/actions/workflows/test.yml)
-[![release](https://github.com/simonwoerpel/mmmeta/actions/workflows/release.yml/badge.svg)](https://github.com/simonwoerpel/mmmeta/actions/workflows/release.yml)
-[![pypi](https://github.com/simonwoerpel/mmmeta/actions/workflows/publish.yml/badge.svg)](https://github.com/simonwoerpel/mmmeta/actions/workflows/publish.yml)
+# ARCHIVED as of 2025-01-16
+
+The concepts and logic of `mmmeta` have been moved to [leakrfc](https://github.com/investigativedata/leakrfc)
+
+----
 
 # mmmeta
 
